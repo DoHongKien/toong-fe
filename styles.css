@@ -815,7 +815,7 @@ img {
     top: 100%; /* Anchor directly below the header */
     left: 0;
     width: 100%;
-    background: var(--color-white);
+    background: var(--color-primary);
     box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     opacity: 0;
     visibility: hidden;
@@ -848,12 +848,12 @@ img {
 .mega-links {
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #eee;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
     padding-right: 1.5rem;
 }
 
 .mega-links-title {
-    color: #1a4d2e; /* Thể hiện mục lục */
+    color: var(--color-accent); /* Thể hiện mục lục */
     font-size: 1rem;
     font-weight: 700;
     margin-bottom: 1.5rem;
@@ -870,7 +870,7 @@ img {
 }
 
 .mega-links a {
-    color: #333;
+    color: var(--color-white);
     font-size: 1rem;
     font-weight: 500;
     text-decoration: none;
@@ -910,14 +910,14 @@ img {
 }
 
 .mega-desc-main {
-    color: #1a4d2e; /* Màu xanh lá đậm */
+    color: var(--color-white); /* Thống nhất màu chữ trắng */
     font-size: 1.2rem;
     font-weight: 800;
     margin: 0 0 1.5rem 0;
 }
 
 .mega-description p {
-    color: #444;
+    color: rgba(255, 255, 255, 0.8);
     font-size: 0.95rem;
     line-height: 1.6;
     margin: 0;
