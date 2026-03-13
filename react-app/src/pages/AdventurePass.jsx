@@ -37,7 +37,7 @@ const passCards = [
       { text: '10 cung đường', bold: true },
       { text: '1 Chủ sở hữu', bold: true },
       {
-        text: 'Đặc quyền thẻ phụ: Mời bạn bè đi chung tour Tổ Ong Adventure 2 lần miễn phí',
+        text: 'Đặc quyền thẻ phụ: Mời bạn bè đi chung tour Tổ Kiến Adventure 2 lần miễn phí',
         bold: false,
       },
       {

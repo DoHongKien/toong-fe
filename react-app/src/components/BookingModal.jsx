@@ -24,10 +24,12 @@ const today = () => {
   return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '/')
 }
 
-const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, availableDates = [] }) => {
+const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, initialPaymentDeadline, initialDepositDate, availableDates = [] }) => {
   const [step, setStep] = useState(1)
   const [departureDate, setDepartureDate] = useState(initialDate || '')
   const [fixedEndDate, setFixedEndDate] = useState(initialEndDate || '')
+  const [paymentDeadline, setPaymentDeadline] = useState(initialPaymentDeadline || '')
+  const [depositDate, setDepositDate] = useState(initialDepositDate || '')
   const [quantity, setQuantity] = useState(1)
   const [paymentMethod, setPaymentMethod] = useState('chuyen-khoan')
   const [form, setForm] = useState({ ho: '', ten: '', phone: '', email: '' })
@@ -39,13 +41,15 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, availableD
     if (isOpen) {
       setDepartureDate(initialDate || '')
       setFixedEndDate(initialEndDate || '')
+      setPaymentDeadline(initialPaymentDeadline || '')
+      setDepositDate(initialDepositDate || '')
       setStep(1)
       setQuantity(1)
       setPaymentMethod('chuyen-khoan')
       setForm({ ho: '', ten: '', phone: '', email: '' })
       setErrors({})
     }
-  }, [isOpen, initialDate, initialEndDate])
+  }, [isOpen, initialDate, initialEndDate, initialPaymentDeadline, initialDepositDate])
 
   // Lock body scroll when open
   useEffect(() => {
@@ -66,7 +70,7 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, availableD
   const endDateDisplay = fixedEndDate || (departureDate ? addDays(departureDate, 1) : '')
   const totalPrice = PRICE_PER_PERSON * quantity
   const remaining = totalPrice - DEPOSIT
-  const paymentLabel = paymentMethod === 'payon' ? 'Payon' : 'Chuyển khoản'
+  const paymentLabel = paymentMethod === 'vnpay' ? 'VNPAY' : 'Chuyển khoản'
 
   const validate = () => {
     const e = {}
@@ -145,11 +149,15 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, availableD
                                 if (!val) {
                                   setDepartureDate('')
                                   setFixedEndDate('')
+                                  setPaymentDeadline('')
+                                  setDepositDate('')
                                   return
                                 }
                                 const match = availableDates.find(d => d.date === val)
                                 setDepartureDate(val)
                                 setFixedEndDate(match?.endDate || '')
+                                setPaymentDeadline(match?.paymentDeadline || '')
+                                setDepositDate(match?.depositDate || '')
                                 setErrors(prev => { const e = { ...prev }; delete e.departure; return e })
                               }}
                             />
@@ -202,7 +210,7 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, availableD
                     </div>
                     <div className="bm-order-cell">
                       <label className="bm-sublabel">NGÀY ĐẶT CỌC</label>
-                      <span className="bm-order-value bold">{today()}</span>
+                      <span className="bm-order-value bold">{depositDate || '—'}</span>
                     </div>
                   </div>
 
@@ -213,11 +221,11 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, availableD
                         <input
                           type="radio"
                           name="payment"
-                          value="payon"
-                          checked={paymentMethod === 'payon'}
-                          onChange={() => setPaymentMethod('payon')}
+                          value="vnpay"
+                          checked={paymentMethod === 'vnpay'}
+                          onChange={() => setPaymentMethod('vnpay')}
                           disabled={step === 2}
-                        /> Payon
+                        /> VNPAY
                       </label>
                       <label className="bm-radio-label">
                         <input
@@ -239,7 +247,7 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, availableD
                     </div>
                     <div className="bm-order-cell">
                       <label className="bm-sublabel">HẠN THANH TOÁN</label>
-                      <span className="bm-order-value">{departureDateDisplay ? addDays(departureDateDisplay, -2) : '—'}</span>
+                    <span className="bm-order-value">{paymentDeadline || '—'}</span>
                     </div>
                   </div>
                 </div>
@@ -362,16 +370,21 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, availableD
                     <div className="bm-summary-grid bm-summary-grid--2">
                       <div className="bm-summary-cell">
                         <label className="bm-sublabel">NGÀY ĐẶT CỌC:</label>
-                        <strong>{today()}</strong>
+                        <strong>{depositDate || '—'}</strong>
                       </div>
                       <div className="bm-summary-cell">
-                        <label className="bm-sublabel">PHƯƠNG THỨC THANH TOÁN:</label>
-                        <strong>- {paymentLabel}</strong>
+                        <label className="bm-sublabel">HẠN THANH TOÁN:</label>
+                        <strong>{paymentDeadline || '—'}</strong>
                       </div>
                     </div>
 
+                    <div className="bm-summary-cell" style={{ borderTop: '1px solid #eee' }}>
+                      <label className="bm-sublabel">PHƯƠNG THỨC THANH TOÁN:</label>
+                      <strong>- {paymentLabel}</strong>
+                    </div>
+
                     <p className="bm-note">
-                      Lưu ý: Tổ Ong sẽ liên hệ với bạn để xác nhận đặt chỗ theo những thông tin bên trên.
+                      Lưu ý: Tổ Kiến sẽ liên hệ với bạn để xác nhận đặt chỗ theo những thông tin bên trên.
                       Hãy kiểm tra lại thông tin đăng ký của bạn thật kỹ trước khi tiến hành đặt chỗ nhé!
                     </p>
 
@@ -401,7 +414,7 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, availableD
               <div className="bm-success-header">
                 <div className="bm-success-icon">✓</div>
                 <h3>ĐẶT CHỖ THÀNH CÔNG</h3>
-                <p>Cảm ơn bạn đã tin tưởng và lựa chọn Tổ Ong Adventure!</p>
+                <p>Cảm ơn bạn đã tin tưởng và lựa chọn Tổ Kiến Adventure!</p>
               </div>
 
               <div className="bm-success-body">
@@ -423,7 +436,7 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, availableD
                       </div>
                       <div className="bm-bank-row">
                         <span>Chủ tài khoản:</span>
-                        <strong>CÔNG TY TNHH TỔ ONG ADVENTURE</strong>
+                        <strong>CÔNG TY TNHH Tổ Kiến Adventure</strong>
                       </div>
                       <div className="bm-bank-row">
                         <span>Số tài khoản:</span>
@@ -432,6 +445,10 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, availableD
                       <div className="bm-bank-row">
                         <span>Số tiền đặt cọc:</span>
                         <strong className="primary">{formatVND(DEPOSIT)}</strong>
+                      </div>
+                      <div className="bm-bank-row">
+                        <span>Hạn thanh toán còn lại:</span>
+                        <strong className="primary">{paymentDeadline || '—'}</strong>
                       </div>
                       <div className="bm-bank-row">
                         <span>Nội dung:</span>
@@ -443,7 +460,7 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, availableD
 
                 <div className="bm-success-footer">
                   <p className="bm-contact-note">
-                    Tổ Ong sẽ liên hệ với bạn trong vòng 24h để xác nhận và hướng dẫn các bước tiếp theo.
+                    Tổ Kiến sẽ liên hệ với bạn trong vòng 24h để xác nhận và hướng dẫn các bước tiếp theo.
                   </p>
                   <button className="btn btn-primary bm-home-btn" onClick={handleReturnHome}>
                     Trở về trang chủ

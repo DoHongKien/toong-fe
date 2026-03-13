@@ -131,6 +131,7 @@ const Navbar = ({ alwaysScrolled = false }) => {
                     <li key={link.title}>
                       <Link
                         to={link.href}
+                        className="mega-item-link"
                         onMouseEnter={() => !isMobile && handleMegaLinkHover(menu.key, link)}
                         onClick={isMobile ? handleMobileLinkClick : undefined}
                         tabIndex={0}
@@ -201,23 +202,25 @@ const Navbar = ({ alwaysScrolled = false }) => {
     <>
       <header className={`header${isScrolled ? ' scrolled' : ''}`} id="header">
         <div className="container nav-wrapper">
-          <Link
-            to="/"
-            className="logo"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}
-            aria-label="Tổ Ong Adventure - Trang chủ"
-          >
-            <Tent style={{ color: 'var(--color-accent)', width: 32, height: 32 }} />
-            <span
-              className="logo-text"
-              style={{ display: 'flex', flexDirection: 'column', lineHeight: 1, color: 'var(--color-white)' }}
+          <div className="logo-wrap">
+            <Link
+              to="/"
+              className="logo"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}
+              aria-label="Tổ Kiến Adventure - Trang chủ"
             >
-              <strong style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: 1 }}>TỔ ONG</strong>
-              <span style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: 3, color: 'var(--color-accent)' }}>
-                ADVENTURE
+              <Tent style={{ color: 'var(--color-accent)', width: 32, height: 32 }} />
+              <span
+                className="logo-text"
+                style={{ display: 'flex', flexDirection: 'column', lineHeight: 1, color: 'var(--color-white)' }}
+              >
+                <strong style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: 1 }}>Tổ Kiến</strong>
+                <span style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: 3, color: 'var(--color-accent)' }}>
+                  ADVENTURE
+                </span>
               </span>
-            </span>
-          </Link>
+            </Link>
+          </div>
 
           {/* Desktop nav — inline trong header, ẩn trên mobile qua CSS */}
           <nav className="nav-links" id="nav-links">

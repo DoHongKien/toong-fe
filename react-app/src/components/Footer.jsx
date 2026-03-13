@@ -7,7 +7,7 @@ const Footer = ({ minimal = false }) => {
       <footer className="footer" id="contact">
         <div className="container">
           <div className="footer-bottom">
-            <p>&copy; 2026 Tổ Ong Adventure. All rights reserved.</p>
+            <p>&copy; 2026 Tổ Kiến Adventure. All rights reserved.</p>
           </div>
         </div>
       </footer>
@@ -19,9 +19,9 @@ const Footer = ({ minimal = false }) => {
       <div className="container">
         <div className="footer-grid">
           <div className="footer-col brand-col">
-            <Link to="/" className="logo footer-logo" aria-label="Tổ Ong Adventure">
+            <Link to="/" className="logo footer-logo" aria-label="Tổ Kiến Adventure">
               <span className="logo-text text-white">
-                TỔ ONG<span>ADVENTURE</span>
+                Tổ Kiến<span>ADVENTURE</span>
               </span>
             </Link>
             <p>
@@ -42,7 +42,7 @@ const Footer = ({ minimal = false }) => {
           </div>
 
           <div className="footer-col">
-            <h4>Về Tổ Ong</h4>
+            <h4>Về Tổ Kiến</h4>
             <ul>
               <li>
                 <a href="#" tabIndex={0}>Câu Chuyện Của Chúng Tôi</a>
@@ -93,7 +93,7 @@ const Footer = ({ minimal = false }) => {
           </div>
         </div>
         <div className="footer-bottom">
-          <p>&copy; 2026 Tổ Ong Adventure. All rights reserved.</p>
+          <p>&copy; 2026 Tổ Kiến Adventure. All rights reserved.</p>
         </div>
       </div>
     </footer>

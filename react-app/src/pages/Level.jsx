@@ -154,7 +154,7 @@ const Level = () => {
           <FadeIn className="section-header text-center">
             <h2 className="section-title">Tiêu Chí Phân Loại</h2>
             <p className="section-desc">
-              Các cấp độ mạo hiểm được Tổ Ong xây dựng và đánh giá dựa trên 5 tiêu chí định lượng khắt khe.
+              Các cấp độ mạo hiểm được Tổ Kiến xây dựng và đánh giá dựa trên 5 tiêu chí định lượng khắt khe.
             </p>
           </FadeIn>
           <FadeIn className="radar-container text-center">

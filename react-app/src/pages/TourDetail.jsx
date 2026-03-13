@@ -71,7 +71,7 @@ const includedItems = [
   'Bảo hiểm du lịch.',
   'Hậu cần chu đáo, đảm bảo khẩu phần và vệ sinh an toàn thực phẩm.',
   'Phí tham quan và lưu trú tại Vườn Quốc Gia.',
-  'Hỗ trợ ký gửi túi gửi hành lí 5 lít (túi sẽ do Tổ Ong chuẩn bị).',
+  'Hỗ trợ ký gửi túi gửi hành lí 5 lít (túi sẽ do Tổ Kiến chuẩn bị).',
 ]
 
 const excludedItems = [
@@ -104,15 +104,15 @@ const luggageItems = [
 ]
 
 const notes = [
-  'Khách hàng đăng ký trước thứ 4 hằng tuần, bên cạnh Giấy chứng nhận sẽ nhận được 1 THẺ CHINH PHỤC sau khi hoàn thành cung đường với những ưu đãi đặc biệt đến từ đối tác của Tổ Ong Adventure.',
+  'Khách hàng đăng ký trước thứ 4 hằng tuần, bên cạnh Giấy chứng nhận sẽ nhận được 1 THẺ CHINH PHỤC sau khi hoàn thành cung đường với những ưu đãi đặc biệt đến từ đối tác của Tổ Kiến Adventure.',
   'ĐỐI VỚI KHÁCH NƯỚC NGOÀI có yêu cầu Tourguide tiếng Anh, phụ thu 300.000đ/ người. Đăng ký trước 7 ngày (đối với ngày thường) và trước 30 ngày (đối với lễ, Tết).',
 ]
 
 const departures = [
-  { date: '05/04/2026', endDate: '06/04/2026', price: '2.990.000 VND' },
-  { date: '19/04/2026', endDate: '20/04/2026', price: '2.990.000 VND' },
-  { date: '03/05/2026', endDate: '04/05/2026', price: '2.990.000 VND' },
-  { date: '05/05/2026', endDate: '06/05/2026', price: '2.990.000 VND' },
+  { date: '05/04/2026', endDate: '06/04/2026', paymentDeadline: '03/04/2026', depositDate: '20/03/2026', price: '2.990.000 VND' },
+  { date: '19/04/2026', endDate: '20/04/2026', paymentDeadline: '17/04/2026', depositDate: '21/03/2026', price: '2.990.000 VND' },
+  { date: '03/05/2026', endDate: '04/05/2026', paymentDeadline: '01/05/2026', depositDate: '22/03/2026', price: '2.990.000 VND' },
+  { date: '05/05/2026', endDate: '06/05/2026', paymentDeadline: '03/05/2026', depositDate: '23/03/2026', price: '2.990.000 VND' },
 ]
 
 const day1Timeline = [
@@ -132,14 +132,330 @@ const day2Timeline = [
   { time: '17:00', desc: 'Về đến xã Phan Dũng. Lên xe di chuyển về TP.HCM. Kết thúc hành trình.' },
 ]
 
+const faqItems = [
+  {
+    q: 'Tour có phù hợp với người chưa từng trekking không?',
+    a: 'Tour phù hợp với người có sức khỏe bình thường và chưa có kinh nghiệm trekking. Chúng tôi có hướng dẫn viên và hướng dẫn địa phương đi kèm suốt hành trình để hỗ trợ bạn.'
+  },
+  {
+    q: 'Tôi có thể mang theo trẻ em không?',
+    a: 'Tour phù hợp với độ tuổi từ 12 – 50 tuổi. Trẻ em dưới 12 tuổi không được khuyến khích tham gia do địa hình khá khó đi và yêu cầu sức bền nhất định.'
+  },
+  {
+    q: 'Chính sách hủy tour như thế nào?',
+    a: 'Hủy trước 15 ngày: hoàn 70% tiền cọc. Hủy trong vòng 7–14 ngày: hoàn 50%. Hủy trong vòng 7 ngày: không hoàn tiền. Tổ Kiến có thể hỗ trợ chuyển sang đoàn khác nếu bạn báo sớm.'
+  },
+  {
+    q: 'Tôi có thể mang thú cưng theo không?',
+    a: 'Rất tiếc, vì lý do an toàn và quy định của Vườn Quốc Gia, bạn không thể mang theo thú cưng trong chuyến trekking này.'
+  },
+  {
+    q: 'Có cần chuẩn bị gì về sức khỏe trước khi đi không?',
+    a: 'Bạn nên tập luyện thể lực nhẹ (đi bộ, chạy bộ) ít nhất 2–3 tuần trước chuyến đi. Người có bệnh lý tim mạch, huyết áp hoặc các bệnh mãn tính nên tham khảo ý kiến bác sĩ trước khi đăng ký.'
+  },
+  {
+    q: 'Thời tiết tại Tà Năng – Phan Dũng như thế nào?',
+    a: 'Thời tiết thay đổi theo mùa. Mùa khô (tháng 12 – 4) là thời điểm lý tưởng nhất với đồi cỏ vàng ruộm. Mùa mưa (tháng 6 – 10) đường dốc trơn trượt, không được tổ chức tour vì lý do an toàn.'
+  },
+]
+
+const similarTours = [
+  {
+    id: 1,
+    name: 'Nặm Me',
+    desc: 'Nặm Me - Cung đường Hiking khám phá thác Nặm Me hùng vĩ của vùng đất Tuyên Quang. Băng qua cánh rừng nguyên sinh, chinh phục thác Khuổi Nhi, cắm trại tại bãi campsite hoang sơ, chèo SUP ngắm nhìn mặt hồ xanh...',
+    originalPrice: '2,990,000 VND',
+    price: '2,690,000 VND',
+    img: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 2,
+    name: 'Đà Bắc',
+    desc: 'Hành trình Đà Bắc sẽ đưa bạn đến xóm Ngòi Hoa và xóm Sưng, nơi vẻ đẹp thiên nhiên và văn hóa dân tộc hoà quyện bên dòng sông Đà. Bạn sẽ khám phá Hang Sung và Đồng Hoa Tiên huyền bí, chèo Sup trên dòng sông...',
+    originalPrice: null,
+    price: '2,490,000 VND',
+    img: 'https://images.unsplash.com/photo-1518623489648-a173ef7824f3?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 3,
+    name: 'Bù Gia Mập',
+    desc: 'Bù Gia Mập - Cung đường khám phá cánh rừng xanh đa dạng nằm trên sự phì nhiêu của mảnh đất phù sa cổ, cách Sài Gòn chỉ hơn 200km. Hành trình 2 ngày 1 đêm walking xuyên địa hình rừng nhiệt đới ẩm thường xanh...',
+    originalPrice: null,
+    price: '2,490,000 VND',
+    img: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 4,
+    name: 'Lùng Cúng',
+    desc: 'Lùng Cúng là đỉnh cao thứ 11 Việt Nam tại Yên Bái với độ cao 2.913m. Chinh phục đỉnh Lùng Cúng bạn sẽ được trải nghiệm những thảm cỏ bát ngát, rừng trúc xanh mướt, và ngắm nhìn toàn cảnh vùng núi Tây Bắc hùng vĩ...',
+    originalPrice: null,
+    price: '2,790,000 VND',
+    img: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 5,
+    name: 'Walking Hòn Bà',
+    desc: 'Hòn Bà - Khu bảo tồn thiên nhiên hiếm có giữa lòng thành phố biển Nha Trang. Hành trình trekking xuyên rừng nguyên sinh, khám phá thác nước ẩn mình, cắm trại giữa không gian trong lành mát mẻ...',
+    originalPrice: '3,200,000 VND',
+    price: '2,990,000 VND',
+    img: 'https://images.unsplash.com/photo-1439853949212-36cb17cd8cf2?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 6,
+    name: 'Cao Bằng',
+    desc: 'Khám phá vùng đất địa đầu Tổ quốc với những thác nước hùng vĩ, ruộng bậc thang trải dài, và nền văn hóa dân tộc đặc sắc. Hành trình chinh phục Thác Bản Giốc - thác nước đẹp nhất Đông Nam Á...',
+    originalPrice: null,
+    price: '3,190,000 VND',
+    img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80',
+  },
+]
+
+const SimilarToursCarousel = () => {
+  const total = similarTours.length
+  const GAP = 24 // px — must match CSS gap (24px)
+  const trackRef = useRef(null)
+  const currentIdx = useRef(0)
+  const isResetting = useRef(false)
+  const intervalRef = useRef(null)
+  const isPaused = useRef(false)
+  const cardWidthRef = useRef(0)
+
+  // Keep latest helpers in refs to avoid stale closures in setInterval
+  const helpersRef = useRef({})
+
+  helpersRef.current.getCardWidth = () => {
+    if (!trackRef.current) return 0
+    const wrapper = trackRef.current.parentElement
+    const wrapperWidth = wrapper.offsetWidth - 32 // 1rem padding each side
+    const cardW = (wrapperWidth - GAP * 2) / 3
+    wrapper.style.setProperty('--card-w', `${cardW}px`)
+    cardWidthRef.current = cardW
+    return cardW
+  }
+
+  helpersRef.current.applyTranslate = (idx, animated) => {
+    if (!trackRef.current) return
+    const cardW = cardWidthRef.current || helpersRef.current.getCardWidth()
+    const offset = idx * (cardW + GAP)
+    trackRef.current.style.transition = animated
+      ? 'transform 0.55s cubic-bezier(0.25, 0.8, 0.25, 1)'
+      : 'none'
+    trackRef.current.style.transform = `translateX(-${offset}px)`
+  }
+
+  helpersRef.current.advance = () => {
+    if (isPaused.current || isResetting.current) return
+    const h = helpersRef.current
+    currentIdx.current += 1
+
+    if (currentIdx.current >= total) {
+      h.applyTranslate(currentIdx.current, true)
+      isResetting.current = true
+      setTimeout(() => {
+        currentIdx.current = 0
+        h.applyTranslate(0, false)
+        isResetting.current = false
+      }, 570)
+    } else {
+      h.applyTranslate(currentIdx.current, true)
+    }
+  }
+
+  useEffect(() => {
+    const h = helpersRef.current
+    h.getCardWidth()
+    h.applyTranslate(0, false)
+
+    intervalRef.current = setInterval(() => helpersRef.current.advance(), 3000)
+
+    const handleResize = () => {
+      h.getCardWidth()
+      h.applyTranslate(currentIdx.current, false)
+    }
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      clearInterval(intervalRef.current)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
+
+  const pause = () => {
+    isPaused.current = true
+    clearInterval(intervalRef.current)
+  }
+
+  const resume = () => {
+    isPaused.current = false
+    intervalRef.current = setInterval(() => helpersRef.current.advance(), 2000)
+  }
+
+  const extendedTours = [...similarTours, ...similarTours.slice(0, 3)]
+
+  return (
+    <div className="similar-tours-section">
+      <h2 className="similar-tours-title">LỊCH TRÌNH TƯƠNG TỰ</h2>
+      <div
+        className="similar-tours-track-wrap"
+        onMouseEnter={pause}
+        onMouseLeave={resume}
+      >
+        <div className="similar-tours-track similar-tours-track--slide" ref={trackRef}>
+          {extendedTours.map((tour, i) => (
+            <div className="similar-tour-card" key={`${tour.id}-${i}`}>
+              <div className="similar-tour-img-wrap">
+                <img src={tour.img} alt={tour.name} className="similar-tour-img" />
+              </div>
+              <div className="similar-tour-body">
+                <h3 className="similar-tour-name">{tour.name}</h3>
+                <p className="similar-tour-desc">{tour.desc}</p>
+                <div className="similar-tour-price-block">
+                  {tour.originalPrice && (
+                    <span className="similar-tour-price-original">{tour.originalPrice}</span>
+                  )}
+                  <span className="similar-tour-price-current">{tour.price}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const DepartureCarousel = ({ departures, onBook }) => {
+  const total = departures.length
+  const GAP = 24
+  const trackRef = useRef(null)
+  const currentIdx = useRef(0)
+  const isResetting = useRef(false)
+  const intervalRef = useRef(null)
+  const isPaused = useRef(false)
+  const cardWidthRef = useRef(0)
+  const helpersRef = useRef({})
+
+  helpersRef.current.getCardWidth = () => {
+    if (!trackRef.current) return 0
+    const wrapper = trackRef.current.parentElement
+    const wrapperWidth = wrapper.offsetWidth
+    // We show 4 cards on desktop by default
+    let visibleCount = 4
+    if (window.innerWidth <= 768) visibleCount = 1
+    else if (window.innerWidth <= 992) visibleCount = 2
+
+    const cardW = (wrapperWidth - GAP * (visibleCount - 1)) / visibleCount
+    wrapper.style.setProperty('--dep-card-w', `${cardW}px`)
+    cardWidthRef.current = cardW
+    return cardW
+  }
+
+  helpersRef.current.applyTranslate = (idx, animated) => {
+    if (!trackRef.current) return
+    const cardW = cardWidthRef.current || helpersRef.current.getCardWidth()
+    const offset = idx * (cardW + GAP)
+    trackRef.current.style.transition = animated 
+      ? 'transform 0.55s cubic-bezier(0.25, 0.8, 0.25, 1)' 
+      : 'none'
+    trackRef.current.style.transform = `translateX(-${offset}px)`
+  }
+
+  helpersRef.current.advance = () => {
+    if (isPaused.current || isResetting.current) return
+    const h = helpersRef.current
+    currentIdx.current += 1
+
+    if (currentIdx.current >= total) {
+      h.applyTranslate(currentIdx.current, true)
+      isResetting.current = true
+      setTimeout(() => {
+        currentIdx.current = 0
+        h.applyTranslate(0, false)
+        isResetting.current = false
+      }, 570)
+    } else {
+      h.applyTranslate(currentIdx.current, true)
+    }
+  }
+
+  useEffect(() => {
+    const h = helpersRef.current
+    h.getCardWidth()
+    h.applyTranslate(0, false)
+
+    intervalRef.current = setInterval(() => h.advance(), 2000)
+
+    const handleResize = () => {
+      h.getCardWidth()
+      h.applyTranslate(currentIdx.current, false)
+    }
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      clearInterval(intervalRef.current)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
+
+  const pause = () => {
+    isPaused.current = true
+    clearInterval(intervalRef.current)
+  }
+
+  const resume = () => {
+    isPaused.current = false
+    intervalRef.current = setInterval(() => helpersRef.current.advance(), 2000)
+  }
+
+  // Clone first few items for seamless loop
+  const extendedDepartures = [...departures, ...departures.slice(0, 4)]
+
+  return (
+    <div 
+      className="departure-marquee-wrap"
+      onMouseEnter={pause}
+      onMouseLeave={resume}
+    >
+      <div className="departure-track departure-track--slide" ref={trackRef}>
+        {extendedDepartures.map((dep, i) => (
+          <div key={`${dep.date}-${i}`} className="departure-card">
+            <div className="departure-card-top">
+              <span className="departure-date">{dep.date}</span>
+            </div>
+            <div className="departure-card-body">
+              <p className="departure-price">{dep.price} <span>/ khách</span></p>
+              <button
+                className="btn departure-btn"
+                aria-label="Đăng ký ngay"
+                onClick={() => onBook(dep.date, dep.endDate, dep.paymentDeadline, dep.depositDate)}
+              >
+                Đăng ký ngay
+              </button>
+            </div>
+            <div className="departure-card-footer">
+              <button className="departure-share" aria-label="Chia sẻ thông tin">
+                <Share2 size={14} /> Chia sẻ thông tin
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 const TourDetail = () => {
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState('')
   const [selectedEndDate, setSelectedEndDate] = useState('')
+  const [selectedPaymentDeadline, setSelectedPaymentDeadline] = useState('')
+  const [selectedDepositDate, setSelectedDepositDate] = useState('')
 
   const handleBookClick = () => {
     setSelectedDate('')
     setSelectedEndDate('')
+    setSelectedPaymentDeadline('')
+    setSelectedDepositDate('')
     setModalOpen(true)
   }
 
@@ -160,6 +476,8 @@ const TourDetail = () => {
         onClose={() => setModalOpen(false)}
         initialDate={selectedDate}
         initialEndDate={selectedEndDate}
+        initialPaymentDeadline={selectedPaymentDeadline}
+        initialDepositDate={selectedDepositDate}
         availableDates={departures}
       />
       <Navbar alwaysScrolled />
@@ -349,36 +667,30 @@ const TourDetail = () => {
           <FadeIn>
             <div className="departure-section">
               <h2 className="departure-title">LỊCH KHỞI HÀNH GẦN NHẤT</h2>
-              <div className="departure-marquee-wrap">
-                <div
-                  className="departure-track"
-                  style={{ animationDuration: `${departures.length * 3.5}s` }}
-                >
-                  {[...departures, ...departures].map((dep, i) => (
-                    <div key={i} className="departure-card">
-                      <div className="departure-card-top">
-                        <span className="departure-date">{dep.date}</span>
-                      </div>
-                      <div className="departure-card-body">
-                        <p className="departure-price">{dep.price} <span>/ khách</span></p>
-                        <button
-                          className="btn departure-btn"
-                          aria-label="Đăng ký ngay"
-                          onClick={() => handleDepartureBook(dep.date, dep.endDate)}
-                        >
-                          Đăng ký ngay
-                        </button>
-                      </div>
-                      <div className="departure-card-footer">
-                        <button className="departure-share" aria-label="Chia sẻ thông tin">
-                          <Share2 size={14} /> Chia sẻ thông tin
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <DepartureCarousel
+                departures={departures}
+                onBook={handleDepartureBook}
+              />
+            </div>
+          </FadeIn>
+
+          {/* FAQ — full width below departure schedule */}
+          <FadeIn>
+            <div className="faq-section">
+              <h2 className="departure-title">CÂU HỎI THƯỜNG GẶP</h2>
+              <div className="itinerary-accordion faq-accordion">
+                {faqItems.map((item) => (
+                  <AccordionItem key={item.q} title={item.q}>
+                    <p>{item.a}</p>
+                  </AccordionItem>
+                ))}
               </div>
             </div>
+          </FadeIn>
+
+          {/* Similar Tours Carousel — full width below FAQ */}
+          <FadeIn>
+            <SimilarToursCarousel />
           </FadeIn>
         </div>
       </section>

@@ -153,7 +153,7 @@ const Home = () => {
       <section className="section features" id="features">
         <div className="container">
           <FadeIn className="section-header text-center text-white">
-            <h2 className="section-title">Lý Do Chọn Tổ Ong</h2>
+            <h2 className="section-title">Lý Do Chọn Tổ Kiến</h2>
             <p className="section-desc text-white-50">
               Sự an toàn và trải nghiệm của bạn là ưu tiên hàng đầu của chúng tôi.
             </p>

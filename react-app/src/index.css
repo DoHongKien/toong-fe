@@ -137,7 +137,8 @@ img {
     z-index: 1000;
     padding: 1rem 0;
     transition: var(--transition);
-    background: var(--color-primary);
+    background: #003F3B;
+    /* background: var(--color-primary); */
 }
 
 .header .container {
@@ -168,10 +169,15 @@ img {
     position: relative; /* Essential for containing the mega menu */
 }
 
-.logo {
+.logo-wrap {
     flex: 1;
     display: flex;
     justify-content: flex-start;
+}
+
+.logo {
+    display: inline-flex;
+    align-items: center;
 }
 
 .logo-text {
@@ -205,10 +211,13 @@ img {
     font-weight: 700;
     font-family: 'Livvic', 'Inter', sans-serif;
     position: relative;
+    display: inline-flex;
+    align-items: center;
     font-size: 15px;
     white-space: nowrap;
     letter-spacing: normal;
     transition: color 0.2s ease;
+    padding: 10px 0; /* Add vertical padding to increase hover area naturally */
 }
 
 .nav-links a:not(.btn, .nav-phone):hover {
@@ -910,14 +919,21 @@ img {
     vertical-align: middle;
 }
 
-/* Ensure the hover state doesn't break due to a gap */
-.has-dropdown::after {
+/* Ensure the hover state doesn't break due to a gap - bridge between link and mega menu */
+.has-dropdown .nav-link::after {
     content: '';
     position: absolute;
     width: 100%;
-    height: 60px; /* Bridge the gap fully */
-    top: 50px; /* Start right under the link text */
+    height: 0; /* Hidden by default to avoid pre-triggering */
+    top: 100%; 
     left: 0;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.has-dropdown:hover .nav-link::after {
+    height: 50px; /* Appear only when parent is hovered to bridge the gap */
+    pointer-events: auto;
 }
 
 .mega-menu {
@@ -925,7 +941,7 @@ img {
     top: 100%; /* Anchor directly below the header */
     left: 0;
     width: 100%;
-    background: var(--color-primary);
+    background: var(--color-white);
     box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     opacity: 0;
     visibility: hidden;
@@ -958,12 +974,12 @@ img {
 .mega-links {
     display: flex;
     flex-direction: column;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: 1px solid rgba(0, 0, 0, 0.05);
     padding-right: 1.5rem;
 }
 
 .mega-links-title {
-    color: var(--color-accent); /* Thể hiện mục lục */
+    color: var(--color-primary); /* Thể hiện mục lục */
     font-size: 1rem;
     font-weight: 700;
     margin-bottom: 1.5rem;
@@ -979,17 +995,19 @@ img {
     gap: 0.8rem;
 }
 
-.mega-links a {
-    color: var(--color-white);
-    font-size: 1rem;
+.mega-menu .mega-links a {
+    color: #000000 !important;
+    font-size: 0.92rem;
     font-weight: 500;
     text-decoration: none;
     transition: var(--transition);
     display: block;
+    padding: 4px 0;
 }
 
-.mega-links a:hover {
-    color: var(--color-accent);
+.mega-menu .mega-links a:hover {
+    color: #f15b22;
+    transform: translateX(5px);
 }
 
 /* Column 2: Line Art Image */
@@ -1020,14 +1038,14 @@ img {
 }
 
 .mega-desc-main {
-    color: var(--color-white); /* Thống nhất màu chữ trắng */
+    color: var(--color-primary);
     font-size: 1.2rem;
     font-weight: 800;
     margin: 0 0 1.5rem 0;
 }
 
 .mega-description p {
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--color-text-light);
     font-size: 0.95rem;
     line-height: 1.6;
     margin: 0;
@@ -1327,14 +1345,9 @@ img {
 }
 .departure-track {
   display: flex;
-  gap: 1.5rem;
+  gap: 24px;
   width: max-content;
-  animation: departureScroll linear infinite;
-}
-.departure-track:hover { animation-play-state: paused; }
-@keyframes departureScroll {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+  will-change: transform;
 }
 .departure-card {
   background: #f4f1e9;
@@ -1342,9 +1355,9 @@ img {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: var(--transition);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
   flex-shrink: 0;
-  min-width: 280px;
+  width: var(--dep-card-w, 280px);
 }
 .departure-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.1); }
 .departure-card-top {
@@ -1952,3 +1965,206 @@ img {
   .bm-body { grid-template-columns: 1fr; }
   .bm-right { position: static; }
 }
+
+/* =========================================
+   FAQ SECTION
+========================================= */
+.faq-section {
+  margin-top: 4rem;
+  padding: 0 0 2rem;
+}
+
+.faq-section .departure-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--color-text);
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.faq-accordion .accordion-item {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+
+.faq-accordion .accordion-header {
+  padding: 1.1rem 1.5rem;
+  background: var(--color-bg);
+}
+
+/* .faq-accordion .accordion-header:hover {
+  background: rgba(71, 102, 59, 0.06);
+} */
+
+.faq-accordion .accordion-content p {
+  color: var(--color-text-light);
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* =========================================
+   SIMILAR TOURS CAROUSEL
+========================================= */
+.similar-tours-section {
+  margin-top: 4rem;
+  padding: 4rem 0 2rem;
+  border-top: 1px solid #eee;
+  background: #f4f2ed;
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  padding-left: calc(50vw - 50%);
+  padding-right: calc(50vw - 50%);
+}
+
+.similar-tours-title {
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin-bottom: 2.5rem;
+}
+
+.similar-tours-track-wrap {
+  overflow: hidden;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Slide mode: flex row, JS drives translateX */
+.similar-tours-track--slide {
+  display: flex;
+  gap: 24px;
+  /* width is auto so all cloned cards sit in one long row */
+  will-change: transform;
+}
+
+.similar-tour-card {
+  background: var(--color-white);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  cursor: pointer;
+  /* Width is set dynamically via --card-w CSS var from JS */
+  flex: 0 0 var(--card-w, 320px);
+  width: var(--card-w, 320px);
+}
+
+.similar-tour-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+}
+
+.similar-tour-img-wrap {
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+}
+
+.similar-tour-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.similar-tour-card:hover .similar-tour-img {
+  transform: scale(1.06);
+}
+
+.similar-tour-body {
+  padding: 1.2rem 1.4rem 1.4rem;
+}
+
+.similar-tour-name {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 0.6rem;
+}
+
+.similar-tour-desc {
+  font-size: 0.88rem;
+  color: var(--color-text-light);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.similar-tour-price-block {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.similar-tour-price-original {
+  font-size: 0.82rem;
+  color: #aaa;
+  text-decoration: line-through;
+  font-weight: 500;
+}
+
+.similar-tour-price-current {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  font-family: var(--font-heading);
+}
+
+/* Dot indicators */
+.similar-tours-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.8rem;
+}
+
+.similar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ccc;
+  border: none;
+  cursor: pointer;
+  transition: background 0.25s, transform 0.25s;
+  padding: 0;
+}
+
+.similar-dot.active {
+  background: var(--color-primary);
+  transform: scale(1.4);
+}
+
+.similar-dot:hover {
+  background: var(--color-primary-light);
+}
+
+@media (max-width: 768px) {
+  .similar-tour-card {
+    flex: 0 0 var(--card-w, 300px);
+    width: var(--card-w, 300px);
+  }
+}
+
+@media (min-width: 769px) and (max-width: 992px) {
+  .similar-tour-card {
+    flex: 0 0 var(--card-w, 400px);
+    width: var(--card-w, 400px);
+  }
+}
+
