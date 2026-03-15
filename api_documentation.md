@@ -160,3 +160,53 @@ Tài liệu này xác định các điểm cuối (endpoints) API cần thiết,
       "payment_method": "vnpay"
     }
     ```
+
+---
+
+## 4. Module Navigation Menu (Dynamic Menu)
+
+### 4.1 Lấy toàn bộ cây Menu (`Navbar.jsx`)
+*   **Endpoint:** `/api/v1/menus`
+*   **Method:** `GET`
+*   **Response:** (Dữ liệu phân cấp Cha-Con để render trực tiếp Navbar)
+    ```json
+    {
+      "status": "success",
+      "data": [
+        {
+          "id": 1,
+          "keyName": "natureWalking",
+          "label": "Nature Walking",
+          "href": "#",
+          "type": "MEGA_PARENT",
+          "megaAccentTitle": "Nature Walking",
+          "megaMainTitle": "Nature Walking",
+          "megaDescription": "Phù hợp với những người mới bắt đầu...",
+          "megaImage": "https://...",
+          "children": [
+            {
+              "id": 9,
+              "label": "8 Nàng Tiên",
+              "href": "/tours/8-nang-tien",
+              "type": "ITEM",
+              "megaMainTitle": "8 Nàng Tiên",
+              "megaDescription": "...",
+              "megaImage": "https://..."
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "keyName": null,
+          "label": "Cấp độ mạo hiểm",
+          "href": "/level",
+          "type": "SIMPLE",
+          "children": []
+        }
+      ]
+    }
+    ```
+*   **Logic Backend:**
+    1. Truy vấn toàn bộ bản ghi từ bảng `menus` đang kích hoạt (`is_active = TRUE`).
+    2. JOIN với bảng `tours` để lấy thêm `slug` và `card_image` cho các Menu có `tour_id`.
+    3. Chuyển đổi danh sách phẳng (flat list) thành cấu trúc cây (tree structure) dựa trên `parent_id` trước khi trả về.

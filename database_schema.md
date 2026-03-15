@@ -132,6 +132,25 @@ erDiagram
         string status "pending, paid, cancelled"
         datetime created_at
     }
+
+    MENUS ||--o{ MENUS : "parent of"
+    MENUS }o--o| TOURS : "links to"
+
+    MENUS {
+        int id PK
+        int parent_id FK
+        int tour_id FK
+        string key_name "Logic key"
+        string label "Display name"
+        string href "Link"
+        string type "MEGA_PARENT, SIMPLE, ITEM"
+        string mega_accent_title
+        string mega_main_title
+        text mega_description
+        string mega_image
+        int order_index
+        boolean is_active
+    }
 ```
 
 ## 2. Diễn Giải Các Bảng Chính

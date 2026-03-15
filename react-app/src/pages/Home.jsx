@@ -1,47 +1,10 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Clock, BarChart, ShieldCheck, Users, Leaf, Compass, ChevronDown } from 'lucide-react'
+import { Clock, BarChart, ShieldCheck, Users, Leaf, Compass, ChevronDown, Loader2 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import FadeIn from '../components/FadeIn'
-
-const popularTours = [
-  {
-    id: 1,
-    image: 'https://images.unsplash.com/photo-1522199755839-a2bacb67c546?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-    alt: 'Tà Năng Phan Dũng',
-    badge: 'Best Seller',
-    badgeClass: '',
-    title: 'Tà Năng - Phan Dũng',
-    duration: '2 Ngày 1 Đêm',
-    difficulty: 'Vừa phải',
-    desc: 'Cung đường trekking đẹp nhất Việt Nam, băng qua những đồi cỏ xanh ngút ngàn.',
-    delay: '0ms',
-  },
-  {
-    id: 2,
-    image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-    alt: 'Bù Gia Mập',
-    badge: 'New',
-    badgeClass: 'new',
-    title: 'Vườn Quốc Gia Bù Gia Mập',
-    duration: '2 Ngày 1 Đêm',
-    difficulty: 'Dễ',
-    desc: 'Khám phá hệ sinh thái đa dạng, tắm suối mát lạnh giữa rừng nguyên sinh.',
-    delay: '100ms',
-  },
-  {
-    id: 3,
-    image: 'https://images.unsplash.com/photo-1501555088652-021faa106b9b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-    alt: '8 Nàng Tiên',
-    badge: null,
-    badgeClass: '',
-    title: '8 Nàng Tiên - Ninh Thuận',
-    duration: '3 Ngày 2 Đêm',
-    difficulty: 'Thử thách',
-    desc: 'Chinh phục cung đường ven biển tuyệt đẹp, cắm trại lấp lánh dưới dải ngân hà.',
-    delay: '200ms',
-  },
-]
+import { tourApi } from '../api/api'
 
 const features = [
   {
@@ -75,6 +38,29 @@ const features = [
 ]
 
 const Home = () => {
+  const [popularTours, setPopularTours] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchTours = async () => {
+      try {
+        const response = await tourApi.getAllTours()
+        let toursData = []
+        if (response.data && response.data.status === 'success') {
+          toursData = response.data.data
+        } else {
+          toursData = Array.isArray(response.data) ? response.data : []
+        }
+        setPopularTours(toursData.slice(0, 3))
+      } catch (err) {
+        console.error('Error fetching home tours:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchTours()
+  }, [])
+
   return (
     <>
       <Navbar />
@@ -109,35 +95,41 @@ const Home = () => {
             </p>
           </FadeIn>
 
-          <div className="tours-grid">
-            {popularTours.map((tour) => (
-              <FadeIn key={tour.id} style={{ transitionDelay: tour.delay }}>
-                <div className="tour-card">
-                  <div className="tour-image">
-                    <img src={tour.image} alt={tour.alt} />
-                    {tour.badge && (
-                      <div className={`tour-badge${tour.badgeClass ? ` ${tour.badgeClass}` : ''}`}>{tour.badge}</div>
-                    )}
-                  </div>
-                  <div className="tour-info">
-                    <h3>{tour.title}</h3>
-                    <div className="tour-meta">
-                      <span>
-                        <Clock /> {tour.duration}
-                      </span>
-                      <span>
-                        <BarChart /> {tour.difficulty}
-                      </span>
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="animate-spin h-10 w-10 text-primary" />
+            </div>
+          ) : (
+            <div className="tours-grid">
+              {popularTours.map((tour, index) => (
+                <FadeIn key={tour.id} style={{ transitionDelay: `${index * 100}ms` }}>
+                  <div className="tour-card">
+                    <div className="tour-image">
+                      <img src={tour.cardImage} alt={tour.name} />
+                      {tour.badge && (
+                        <div className="tour-badge">{tour.badge}</div>
+                      )}
                     </div>
-                    <p>{tour.desc}</p>
-                    <Link to="/tour-detail" className="btn btn-outline">
-                      Xem Chi Tiết
-                    </Link>
+                    <div className="tour-info">
+                      <h3>{tour.name}</h3>
+                      <div className="tour-meta">
+                        <span>
+                          <Clock /> {tour.durationDays}N{tour.durationNights}Đ
+                        </span>
+                        <span>
+                          <BarChart /> {tour.difficulty}
+                        </span>
+                      </div>
+                      <p>{tour.summary}</p>
+                      <Link to={`/tours/${tour.slug}`} className="btn btn-outline">
+                        Xem Chi Tiết
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              </FadeIn>
-            ))}
-          </div>
+                </FadeIn>
+              ))}
+            </div>
+          )}
 
           <div className="text-center mt-5">
             <FadeIn>

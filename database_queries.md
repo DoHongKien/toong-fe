@@ -145,6 +145,29 @@ CREATE TABLE pass_orders (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (pass_id) REFERENCES adventure_passes(id)
 );
+
+-- 12. Bảng MENUS (Quản lý thanh điều hướng động)
+CREATE TABLE menus (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    parent_id INT NULL,           -- ID của menu cha (NULL nếu là menu gốc)
+    tour_id INT NULL,             -- Liên kết tới bảng tours
+    key_name VARCHAR(100) UNIQUE NULL, -- Dùng cho logic Frontend (e.g. 'natureWalking')
+    label VARCHAR(255) NOT NULL,
+    href VARCHAR(255) DEFAULT '#',
+    type ENUM('MEGA_PARENT', 'SIMPLE', 'ITEM') DEFAULT 'ITEM',
+    
+    -- Trường mở rộng cho Mega Menu
+    mega_accent_title VARCHAR(255),
+    mega_main_title VARCHAR(255),
+    mega_description TEXT,
+    mega_image VARCHAR(500),
+    
+    order_index INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    
+    FOREIGN KEY (parent_id) REFERENCES menus(id) ON DELETE CASCADE,
+    FOREIGN KEY (tour_id) REFERENCES tours(id) ON DELETE SET NULL
+);
 ```
 
 ---
@@ -258,4 +281,16 @@ ORDER BY p.price ASC;
 ```
 
 ---
-**Gợi ý lập trình:** Trong một REST API chuẩn (hoặc GraphQL, tRPC), nếu một UI như `TourDetail.jsx` cần tải tới 5 Object List (`itinerary`, `costs`, `faqs`, `timelines`, `luggages`), việc mở 5 Queries song song (Ví dụ dùng `Promise.all` hoặc SQL Joins với JSON_AGG) sẽ cho Performance tốt nhất.
+### 2.6 Quản lý Menu Động (`Navbar.jsx`)
+
+**Lấy toàn bộ cây Menu (Dạng phẳng để xử lý tại Backend/Frontend):**
+```sql
+SELECT 
+    m.*, 
+    t.slug AS tour_slug, 
+    t.card_image AS tour_image
+FROM menus m
+LEFT JOIN tours t ON m.tour_id = t.id
+WHERE m.is_active = TRUE
+ORDER BY m.parent_id ASC, m.order_index ASC;
+```

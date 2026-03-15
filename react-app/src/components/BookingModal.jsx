@@ -1,83 +1,70 @@
 import { useState, useEffect, useRef } from 'react'
-import { X } from 'lucide-react'
+import { X, Loader2 } from 'lucide-react'
 import DatePickerCalendar from './DatePickerCalendar'
+import { bookingApi } from '../api/api'
 
-const DEPOSIT = 500000
-const PRICE_PER_PERSON = 2990000
+const DEPOSIT_PERCENT = 0.2 // 20% deposit
 
-// Format number to Vietnamese style: 2.990.000 VND
 const formatVND = (n) =>
-  n.toLocaleString('vi-VN').replace(/,/g, '.') + ' VND'
+  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n)
 
-// Add N days to a date, return dd/MM/yyyy string
-const addDays = (dateStr, n) => {
-  if (!dateStr) return ''
-  const [d, m, y] = dateStr.split('/').map(Number)
-  const dt = new Date(y, m - 1, d)
-  dt.setDate(dt.getDate() + n)
-  return dt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    .replace(/\//g, '/')
+const formatDateDisplay = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleDateString('vi-VN')
 }
 
-const today = () => {
-  const d = new Date()
-  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '/')
+const formatDatePayload = (dateString) => {
+    // If it's already YYYY-MM-DD
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) return dateString
+    // If it's DD/MM/YYYY
+    const parts = dateString.split('/')
+    if (parts.length === 3) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
+    return dateString
 }
 
-const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, initialPaymentDeadline, initialDepositDate, availableDates = [] }) => {
+const BookingModal = ({ isOpen, onClose, initialDeparture, tourId, availableDepartures = [] }) => {
   const [step, setStep] = useState(1)
-  const [departureDate, setDepartureDate] = useState(initialDate || '')
-  const [fixedEndDate, setFixedEndDate] = useState(initialEndDate || '')
-  const [paymentDeadline, setPaymentDeadline] = useState(initialPaymentDeadline || '')
-  const [depositDate, setDepositDate] = useState(initialDepositDate || '')
+  const [loading, setLoading] = useState(false)
+  const [selectedDeparture, setSelectedDeparture] = useState(initialDeparture || null)
   const [quantity, setQuantity] = useState(1)
-  const [paymentMethod, setPaymentMethod] = useState('chuyen-khoan')
+  const [paymentMethod, setPaymentMethod] = useState('bank_transfer')
   const [form, setForm] = useState({ ho: '', ten: '', phone: '', email: '' })
   const [errors, setErrors] = useState({})
+  const [bookingCode, setBookingCode] = useState(null)
+  
   const overlayRef = useRef(null)
 
-  // Sync initial date when modal is opened from a departure card
   useEffect(() => {
     if (isOpen) {
-      setDepartureDate(initialDate || '')
-      setFixedEndDate(initialEndDate || '')
-      setPaymentDeadline(initialPaymentDeadline || '')
-      setDepositDate(initialDepositDate || '')
+      setSelectedDeparture(initialDeparture || null)
       setStep(1)
       setQuantity(1)
-      setPaymentMethod('chuyen-khoan')
+      setPaymentMethod('bank_transfer')
       setForm({ ho: '', ten: '', phone: '', email: '' })
       setErrors({})
+      setBookingCode(null)
     }
-  }, [isOpen, initialDate, initialEndDate, initialPaymentDeadline, initialDepositDate])
+  }, [isOpen, initialDeparture])
 
-  // Lock body scroll when open
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [isOpen])
 
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [onClose])
-
   if (!isOpen) return null
 
-  const departureDateDisplay = departureDate // already DD/MM/YYYY
-  const endDateDisplay = fixedEndDate || (departureDate ? addDays(departureDate, 1) : '')
-  const totalPrice = PRICE_PER_PERSON * quantity
-  const remaining = totalPrice - DEPOSIT
-  const paymentLabel = paymentMethod === 'vnpay' ? 'VNPAY' : 'Chuyển khoản'
+  const basePrice = selectedDeparture?.price || 0
+  const totalPrice = basePrice * quantity
+  const depositAmount = totalPrice * DEPOSIT_PERCENT
+  const remainingAmount = totalPrice - depositAmount
 
   const validate = () => {
     const e = {}
     if (!form.ho.trim()) e.ho = 'Vui lòng nhập họ'
     if (!form.ten.trim()) e.ten = 'Vui lòng nhập tên'
     if (!form.phone.trim()) e.phone = 'Vui lòng nhập số điện thoại'
-    if (!departureDate) e.departure = 'Vui lòng chọn ngày khởi hành'
+    if (!selectedDeparture) e.departure = 'Vui lòng chọn ngày khởi hành'
     return e
   }
 
@@ -88,88 +75,108 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, initialPay
     setStep(2)
   }
 
-  const handleConfirm = () => {
-    // Scroll modal to top when finishing
-    const modalBody = document.querySelector('.bm-modal')
-    if (modalBody) modalBody.scrollTop = 0
-    setStep(3)
-  }
-
-  const handleReturnHome = () => {
-    onClose()
+  const handleConfirm = async () => {
+    setLoading(true)
+    try {
+      const payload = {
+        departureId: selectedDeparture.id,
+        firstName: form.ten,
+        lastName: form.ho,
+        phone: form.phone,
+        email: form.email,
+        quantity: quantity,
+        paymentMethod: paymentMethod.toUpperCase() // API uses Enum in uppercase
+      }
+      
+      const response = await bookingApi.createBooking(payload)
+      if (response.data && response.data.status === 'success') {
+        // Based on BookingController, data field is the bookingCode string
+        setBookingCode(response.data.data)
+        setStep(3)
+        // Scroll modal to top
+        const modalBody = document.querySelector('.bm-modal')
+        if (modalBody) modalBody.scrollTop = 0
+      } else {
+        alert('Có lỗi xảy ra khi đặt chỗ. Vui lòng thử lại.')
+      }
+    } catch (err) {
+      console.error('Booking error:', err)
+      alert('Không thể kết nối tới máy chủ. Vui lòng thử lại sau.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleOverlayClick = (e) => {
     if (e.target === overlayRef.current) onClose()
   }
 
+  // Convert backend dates (camelCase) to frontend format for DatePicker
+  const allowedDatesFrontend = availableDepartures.map(d => {
+    const date = new Date(d.startDate)
+    return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`
+  })
+
+  const currentSelectedDateFrontend = selectedDeparture ? (() => {
+    const date = new Date(selectedDeparture.startDate)
+    return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`
+  })() : ''
+
   return (
     <div className="bm-overlay" ref={overlayRef} onClick={handleOverlayClick} role="dialog" aria-modal="true" aria-label="Đặt chỗ của bạn">
       <div className="bm-modal">
-        {/* Top bar */}
         <div className="bm-topbar">
           <span>Đặt chỗ của bạn</span>
           <button className="bm-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button>
         </div>
 
-        {/* Step indicator */}
-        <div className="bm-steps">
-          <div className={`bm-step ${step === 1 ? 'active' : 'done'}`}>
-            <div className="bm-step-circle">{step > 1 ? '✓' : '1'}</div>
-            <span>ĐĂNG KÝ THÔNG TIN</span>
+        {step < 3 && (
+          <div className="bm-steps">
+            <div className={`bm-step ${step === 1 ? 'active' : 'done'}`}>
+              <div className="bm-step-circle">{step > 1 ? '✓' : '1'}</div>
+              <span>ĐĂNG KÝ THÔNG TIN</span>
+            </div>
+            <div className="bm-step-line" />
+            <div className={`bm-step ${step === 2 ? 'active' : (step > 2 ? 'done' : '')}`}>
+              <div className="bm-step-circle">{step > 2 ? '✓' : '2'}</div>
+              <span>XÁC NHẬN THÔNG TIN</span>
+            </div>
           </div>
-          <div className="bm-step-line" />
-          <div className={`bm-step ${step === 2 ? 'active' : (step > 2 ? 'done' : '')}`}>
-            <div className="bm-step-circle">{step > 2 ? '✓' : '2'}</div>
-            <span>XÁC NHẬN THÔNG TIN</span>
-          </div>
-        </div>
+        )}
 
-        {/* Body */}
         <div className="bm-body">
           {step < 3 ? (
             <>
-              {/* ── Left column ── */}
               <div className="bm-left">
-                {/* THÔNG TIN HÀNH TRÌNH */}
                 <div className="bm-section">
                   <h3 className="bm-section-title">THÔNG TIN HÀNH TRÌNH</h3>
                   <div className="bm-tour-row">
-                    <span className="bm-tour-name">Tà Năng - Phan Dũng</span>
+                    <span className="bm-tour-name">Thông tin chuyến đi</span>
                     <div className="bm-dates-row">
                       <div className="bm-field-group">
                         <label className="bm-sublabel">KHỞI HÀNH</label>
                         {step === 1 ? (
                           <>
                             <DatePickerCalendar
-                              value={departureDate}
-                              allowedDates={availableDates.map(d => d.date)}
+                              value={currentSelectedDateFrontend}
+                              allowedDates={allowedDatesFrontend}
                               hasError={!!errors.departure}
                               onChange={(val) => {
-                                if (!val) {
-                                  setDepartureDate('')
-                                  setFixedEndDate('')
-                                  setPaymentDeadline('')
-                                  setDepositDate('')
-                                  return
-                                }
-                                const match = availableDates.find(d => d.date === val)
-                                setDepartureDate(val)
-                                setFixedEndDate(match?.endDate || '')
-                                setPaymentDeadline(match?.paymentDeadline || '')
-                                setDepositDate(match?.depositDate || '')
+                                const payloadDate = formatDatePayload(val)
+                                const match = availableDepartures.find(d => d.startDate === payloadDate)
+                                setSelectedDeparture(match || null)
                                 setErrors(prev => { const e = { ...prev }; delete e.departure; return e })
                               }}
                             />
                             {errors.departure && <span className="bm-error">{errors.departure}</span>}
                           </>
                         ) : (
-                          <span className="bm-date-value">{departureDateDisplay}</span>
+                          <span className="bm-date-value">{formatDateDisplay(selectedDeparture?.startDate)}</span>
                         )}
                       </div>
                       <div className="bm-field-group">
                         <label className="bm-sublabel">KẾT THÚC</label>
-                        <span className="bm-date-value">{endDateDisplay || '—'}</span>
+                        <span className="bm-date-value">{formatDateDisplay(selectedDeparture?.endDate) || '—'}</span>
                       </div>
                     </div>
                   </div>
@@ -188,7 +195,7 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, initialPay
                             type="number"
                             className="bm-qty-input"
                             min={1}
-                            max={20}
+                            max={(selectedDeparture?.totalSlots - selectedDeparture?.bookedSlots) || 20}
                             value={quantity}
                             onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                           />
@@ -200,17 +207,12 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, initialPay
                   </div>
                 </div>
 
-                {/* CHI TIẾT ĐƠN HÀNG */}
                 <div className="bm-section">
                   <h3 className="bm-section-title">CHI TIẾT ĐƠN HÀNG</h3>
                   <div className="bm-order-grid">
                     <div className="bm-order-cell">
-                      <label className="bm-sublabel">CẦN ĐẶT CỌC</label>
-                      <span className="bm-order-value bold">{formatVND(DEPOSIT)}</span>
-                    </div>
-                    <div className="bm-order-cell">
-                      <label className="bm-sublabel">NGÀY ĐẶT CỌC</label>
-                      <span className="bm-order-value bold">{depositDate || '—'}</span>
+                      <label className="bm-sublabel">CẦN ĐẶT CỌC (20%)</label>
+                      <span className="bm-order-value bold">{formatVND(depositAmount)}</span>
                     </div>
                   </div>
 
@@ -231,9 +233,9 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, initialPay
                         <input
                           type="radio"
                           name="payment"
-                          value="chuyen-khoan"
-                          checked={paymentMethod === 'chuyen-khoan'}
-                          onChange={() => setPaymentMethod('chuyen-khoan')}
+                          value="bank_transfer"
+                          checked={paymentMethod === 'bank_transfer'}
+                          onChange={() => setPaymentMethod('bank_transfer')}
                           disabled={step === 2}
                         /> Chuyển khoản
                       </label>
@@ -243,16 +245,11 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, initialPay
                   <div className="bm-order-grid" style={{ marginTop: '1rem' }}>
                     <div className="bm-order-cell">
                       <label className="bm-sublabel">CÒN LẠI</label>
-                      <span className="bm-order-value">{formatVND(remaining)}</span>
-                    </div>
-                    <div className="bm-order-cell">
-                      <label className="bm-sublabel">HẠN THANH TOÁN</label>
-                    <span className="bm-order-value">{paymentDeadline || '—'}</span>
+                      <span className="bm-order-value">{formatVND(remainingAmount)}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* THÔNG TIN CỦA BẠN */}
                 <div className="bm-section">
                   <h3 className="bm-section-title">THÔNG TIN CỦA BẠN</h3>
                   <div className="bm-form-row">
@@ -329,9 +326,7 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, initialPay
                 </div>
               </div>
 
-              {/* ── Right column (Sidebar) ── */}
               <div className="bm-right">
-                {/* THÔNG TIN ĐĂNG KÝ */}
                 <div className="bm-sidebar-section">
                   <h4 className="bm-sidebar-title">THÔNG TIN ĐĂNG KÝ</h4>
                   <div className="bm-reg-info">
@@ -341,14 +336,13 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, initialPay
                   </div>
                 </div>
 
-                {/* THÔNG TIN ĐƠN HÀNG */}
                 <div className="bm-sidebar-section">
                   <h4 className="bm-sidebar-title">THÔNG TIN ĐƠN HÀNG</h4>
                   <div className="bm-order-summary">
                     <div className="bm-summary-tour">
-                      <span className="bm-summary-name">Tà Năng - Phan Dũng</span>
-                      {departureDateDisplay && (
-                        <span className="bm-summary-dates">({departureDateDisplay} - {endDateDisplay})</span>
+                      <span className="bm-summary-name">Chi tiết tour</span>
+                      {selectedDeparture && (
+                        <span className="bm-summary-dates">({formatDateDisplay(selectedDeparture.startDate)} - {formatDateDisplay(selectedDeparture.endDate)})</span>
                       )}
                     </div>
 
@@ -362,46 +356,29 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, initialPay
                         <strong>{formatVND(totalPrice)}</strong>
                       </div>
                       <div className="bm-summary-cell">
-                        <label className="bm-sublabel">CẦN ĐẶT CỌC:</label>
-                        <strong>{formatVND(DEPOSIT)}</strong>
+                        <label className="bm-sublabel">CẦN ĐẶC CỌC:</label>
+                        <strong>{formatVND(depositAmount)}</strong>
                       </div>
-                    </div>
-
-                    <div className="bm-summary-grid bm-summary-grid--2">
-                      <div className="bm-summary-cell">
-                        <label className="bm-sublabel">NGÀY ĐẶT CỌC:</label>
-                        <strong>{depositDate || '—'}</strong>
-                      </div>
-                      <div className="bm-summary-cell">
-                        <label className="bm-sublabel">HẠN THANH TOÁN:</label>
-                        <strong>{paymentDeadline || '—'}</strong>
-                      </div>
-                    </div>
-
-                    <div className="bm-summary-cell" style={{ borderTop: '1px solid #eee' }}>
-                      <label className="bm-sublabel">PHƯƠNG THỨC THANH TOÁN:</label>
-                      <strong>- {paymentLabel}</strong>
                     </div>
 
                     <p className="bm-note">
                       Lưu ý: Tổ Kiến sẽ liên hệ với bạn để xác nhận đặt chỗ theo những thông tin bên trên.
-                      Hãy kiểm tra lại thông tin đăng ký của bạn thật kỹ trước khi tiến hành đặt chỗ nhé!
                     </p>
 
                     <div className="bm-sidebar-actions">
                       <button
                         className={`btn btn-outline bm-edit-btn ${step === 1 ? 'bm-btn-disabled' : ''}`}
                         onClick={() => setStep(1)}
-                        disabled={step === 1}
+                        disabled={step === 1 || loading}
                       >
                         Chỉnh sửa
                       </button>
                       <button
                         className={`btn btn-primary bm-confirm-btn ${step === 1 ? 'bm-btn-disabled' : ''}`}
-                        disabled={step === 1}
+                        disabled={step === 1 || loading}
                         onClick={handleConfirm}
                       >
-                        Đặt chỗ
+                        {loading ? <Loader2 className="animate-spin h-5 w-5 mx-auto" /> : 'Đặt chỗ'}
                       </button>
                     </div>
                   </div>
@@ -409,25 +386,17 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, initialPay
               </div>
             </>
           ) : (
-            /* ── Step 3: Success Screen ── */
             <div className="bm-success-container">
               <div className="bm-success-header">
                 <div className="bm-success-icon">✓</div>
                 <h3>ĐẶT CHỖ THÀNH CÔNG</h3>
+                <p>Mã đặt chỗ của bạn: <strong className="primary">{bookingCode}</strong></p>
                 <p>Cảm ơn bạn đã tin tưởng và lựa chọn Tổ Kiến Adventure!</p>
               </div>
 
               <div className="bm-success-body">
-                {paymentMethod === 'chuyen-khoan' && (
+                {paymentMethod === 'bank_transfer' && (
                   <div className="bm-bank-details">
-                    <div className="bm-bank-left">
-                      <img
-                        src="file:///C:/Users/kiendh2/.gemini/antigravity/brain/8e0f9904-a580-4576-9b29-925f29af6da5/bank_qr_code_1773374472892.png"
-                        alt="Mã QR Chuyển khoản"
-                        className="bm-qr-code"
-                      />
-                      <p className="bm-qr-note">Quét mã để thanh toán nhanh</p>
-                    </div>
                     <div className="bm-bank-right">
                       <h4 className="bm-bank-title">Thông tin chuyển khoản</h4>
                       <div className="bm-bank-row">
@@ -444,15 +413,11 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, initialPay
                       </div>
                       <div className="bm-bank-row">
                         <span>Số tiền đặt cọc:</span>
-                        <strong className="primary">{formatVND(DEPOSIT)}</strong>
-                      </div>
-                      <div className="bm-bank-row">
-                        <span>Hạn thanh toán còn lại:</span>
-                        <strong className="primary">{paymentDeadline || '—'}</strong>
+                        <strong className="primary">{formatVND(depositAmount)}</strong>
                       </div>
                       <div className="bm-bank-row">
                         <span>Nội dung:</span>
-                        <strong className="primary uppercase">TOONG {form.phone} {form.ten}</strong>
+                        <strong className="primary uppercase">TOONG {bookingCode}</strong>
                       </div>
                     </div>
                   </div>
@@ -462,8 +427,8 @@ const BookingModal = ({ isOpen, onClose, initialDate, initialEndDate, initialPay
                   <p className="bm-contact-note">
                     Tổ Kiến sẽ liên hệ với bạn trong vòng 24h để xác nhận và hướng dẫn các bước tiếp theo.
                   </p>
-                  <button className="btn btn-primary bm-home-btn" onClick={handleReturnHome}>
-                    Trở về trang chủ
+                  <button className="btn btn-primary bm-home-btn" onClick={onClose}>
+                    Đóng
                   </button>
                 </div>
               </div>

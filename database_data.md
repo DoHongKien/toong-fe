@@ -109,4 +109,56 @@ INSERT INTO pass_features (pass_id, content, is_bold) VALUES
 (3, '1 Chủ sở hữu', TRUE),
 (3, 'Đặc quyền thẻ phụ: Mời bạn bè đi chung tour 2 lần miễn phí', FALSE),
 (3, '5 bộ môn thể thao mạo hiểm (Hiking, Lặn biển, Đu dây, SUP, Zipline)', FALSE);
+
+
+-- ==========================================
+-- 10. DỮ LIỆU BẢNG MENUS (Toàn bộ Menu từ Navbar)
+-- ==========================================
+
+-- A. Menu Gốc (Level 0 - Cấu trúc Header)
+INSERT INTO menus (id, parent_id, key_name, label, type, mega_accent_title, mega_main_title, mega_description, mega_image, order_index) VALUES
+(1, NULL, 'natureWalking', 'Nature Walking', 'MEGA_PARENT', 'Nature Walking', 'Nature Walking', 'Phù hợp với những người mới bắt đầu, muốn khám phá và hòa mình vào thiên nhiên bằng các hoạt động đi bộ nhẹ nhàng trên đường mòn.', 'https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=400&q=80', 1),
+(2, NULL, 'mountainHiking', 'Mountain Hiking', 'MEGA_PARENT', 'Mountain Hiking', 'Mountain Hiking', 'Phù hợp với những người đã có kinh nghiệm và thể lực tốt. Địa hình phức tạp, độ dốc cao và nhiều thử thách.', 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=400&q=80', 2),
+(3, NULL, 'trekking', 'Trekking', 'MEGA_PARENT', 'Trekking', 'Trekking', 'Cấp độ thử thách cao nhất, dành cho những nhà sinh tồn và vận động viên chuyên nghiệp. Hành trình dài ngày xuyên qua rừng rậm.', 'https://images.unsplash.com/photo-1522199755839-a2bacb67c546?auto=format&fit=crop&w=400&q=80', 3),
+(4, NULL, NULL, 'Cấp độ mạo hiểm', 'SIMPLE', NULL, NULL, NULL, NULL, 4),
+(5, NULL, NULL, 'Adventure pass', 'SIMPLE', NULL, NULL, NULL, NULL, 5),
+(6, NULL, NULL, 'Thẻ chinh phục', 'SIMPLE', NULL, NULL, NULL, NULL, 6),
+(7, NULL, NULL, 'About', 'SIMPLE', NULL, NULL, NULL, NULL, 7),
+(8, NULL, NULL, 'Teambuilding', 'SIMPLE', NULL, NULL, NULL, NULL, 8);
+
+-- B. Mega Menu Items (Level 1 - Con của Nature Walking)
+INSERT INTO menus (parent_id, tour_id, label, type, mega_main_title, mega_description, mega_image, order_index) VALUES
+(1, 3, '8 Nàng Tiên', 'ITEM', '8 Nàng Tiên', 'Khám phá vẻ đẹp hoang sơ của 8 Nàng Tiên với bãi biển xanh ngắt và cát trắng trải dài.', 'https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=400&q=80', 1),
+(1, 6, 'Walking Hòn Bà', 'ITEM', 'Walking Hòn Bà', 'Trải nghiệm đi bộ dưới tán rừng nguyên sinh mát mẻ, khám phá hệ sinh thái đa dạng.', 'https://images.unsplash.com/photo-1444459092499-555e1bfde960?auto=format&fit=crop&w=400&q=80', 2),
+(1, 7, 'Tà Đùng-Chư Bluk', 'ITEM', 'Tà Đùng-Chư Bluk', 'Hành trình khám phá hồ Tà Đùng - Vịnh Hạ Long trên cao nguyên.', 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=400&q=80', 3),
+(1, 8, 'Walk in Tà Lài', 'ITEM', 'Walk in Tà Lài', 'Hòa mình vào thiên nhiên và tìm hiểu văn hóa bản địa độc đáo tại Tà Lài.', 'https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&w=400&q=80', 4),
+(1, 2, 'Bù Gia Mập', 'ITEM', 'Bù Gia Mập', 'Thử thách bản thân với Vườn Quốc gia Bù Gia Mập, nơi bảo tồn những cánh rừng lồ ô.', 'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=400&q=80', 5),
+(1, 9, 'Đà Bắc', 'ITEM', 'Đà Bắc', 'Chiêm ngưỡng khung cảnh thơ mộng của hồ Hòa Bình và khám phá bản làng yên bình.', 'https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=400&q=80', 6);
+
+-- C. Mega Menu Items (Level 1 - Con của Mountain Hiking)
+INSERT INTO menus (parent_id, tour_id, label, type, mega_main_title, mega_description, mega_image, order_index) VALUES
+(2, 10, 'Tà Giang', 'ITEM', 'Tà Giang', 'Chinh phục Tà Giang với những thảo nguyên cỏ tranh bạt ngàn.', 'https://images.unsplash.com/photo-1522199755839-a2bacb67c546?auto=format&fit=crop&w=400&q=80', 1),
+(2, 11, 'Hiking Đá Bia Phú Yên', 'ITEM', 'Hiking Đá Bia Phú Yên', 'Leo núi Đá Bia, thả tầm mắt bao quát vịnh Vũng Rô.', 'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=400&q=80', 2),
+(2, 12, 'Nặm Me', 'ITEM', 'Nặm Me', 'Khám phá dòng thác Nặm Me hoang sơ đổ xuống từ rừng già.', 'https://images.unsplash.com/photo-1438786657495-640937046d18?auto=format&fit=crop&w=400&q=80', 3),
+(2, 13, 'Cực Đông', 'ITEM', 'Cực Đông', 'Đón ánh bình minh đầu tiên của Việt Nam tại Mũi Đôi.', 'https://images.unsplash.com/photo-1506744626753-1fa44df14d28?auto=format&fit=crop&w=400&q=80', 4),
+(2, 4, 'Bidoup Núi Bà', 'ITEM', 'Bidoup Núi Bà', 'Chinh phục nóc nhà Lâm Đồng, băng qua rừng thông bạt ngàn.', 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80', 5),
+(2, 14, 'Ngũ Long Công Chúa', 'ITEM', 'Ngũ Long Công Chúa', 'Hành trình khám phá hệ thống thác nước kỳ vĩ ẩn mình sâu trong rừng.', 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=400&q=80', 6),
+(2, 15, 'Bidoup - Tà Giang', 'ITEM', 'Bidoup - Tà Giang', 'Cung đường kết nối hai điểm đến tuyệt đẹp, thử thách sự bền bỉ.', 'https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&w=400&q=80', 7),
+(2, 16, 'Thác K50', 'ITEM', 'Thác K50', 'Chiêm ngưỡng kiệt tác thiên nhiên Thác K50 hùng vĩ.', 'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=400&q=80', 8),
+(2, 1, 'Tà Năng Phan Dũng', 'ITEM', 'Tà Năng Phan Dũng', 'Cung đường trekking đẹp nhất Việt Nam, băng qua những đồi cỏ xanh ngút ngàn.', 'https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=400&q=80', 9);
+
+-- D. Mega Menu Items (Level 1 - Con của Trekking)
+INSERT INTO menus (parent_id, tour_id, label, type, mega_main_title, mega_description, mega_image, order_index) VALUES
+(3, 17, 'Lùng Cúng', 'ITEM', 'Lùng Cúng', 'Chinh phục đỉnh Lùng Cúng quanh năm mây mù bao phủ.', 'https://images.unsplash.com/photo-1522199755839-a2bacb67c546?auto=format&fit=crop&w=400&q=80', 1),
+(3, 18, 'Samu U Bò', 'ITEM', 'Samu U Bò', 'Băng qua khu rừng nguyên sinh ngập tràn rêu phong.', 'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=400&q=80', 2),
+(3, 19, 'Núi Chúa', 'ITEM', 'Núi Chúa', 'Vượt qua địa hình khắc nghiệt của thảo nguyên khô hạn.', 'https://images.unsplash.com/photo-1438786657495-640937046d18?auto=format&fit=crop&w=400&q=80', 3),
+(3, 20, 'Tà Chì Nhù Nậm Nghiệp', 'ITEM', 'Tà Chì Nhù Nậm Nghiệp', 'Săn mây Tà Chì Nhù kết hợp ngắm hoa sơn tra nở rộ.', 'https://images.unsplash.com/photo-1506744626753-1fa44df14d28?auto=format&fit=crop&w=400&q=80', 4),
+(3, 21, 'Ngũ Chỉ Sơn', 'ITEM', 'Ngũ Chỉ Sơn', 'Thử thách kỹ năng leo núi với địa hình dốc đứng sừng sững.', 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80', 5),
+(3, 22, 'Tà Chì Nhù', 'ITEM', 'Tà Chì Nhù', 'Biển mây Tà Chì Nhù mênh mông, đẹp ngỡ ngàng.', 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=400&q=80', 6),
+(3, 23, 'Putaleng', 'ITEM', 'Putaleng', 'Băng qua những thung lũng hoa đỗ quyên rực rỡ.', 'https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&w=400&q=80', 7),
+(3, 24, 'Nhìu Cồ San', 'ITEM', 'Nhìu Cồ San', 'Hành trình khám phá vương quốc của băng giá và sương mù.', 'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=400&q=80', 8),
+(3, 25, 'Tả Liên Sơn', 'ITEM', 'Tả Liên Sơn', 'Lạc vào khu rừng cổ tích với những gốc trà cổ thụ.', 'https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=400&q=80', 9),
+(3, 26, 'Ky Quan San', 'ITEM', 'Ky Quan San', 'Chinh phục Bạch Mộc Lương Tử - Thiên đường săn mây.', 'https://images.unsplash.com/photo-1522199755839-a2bacb67c546?auto=format&fit=crop&w=400&q=80', 10),
+(3, 27, 'Phu Sa Phìn(Tà Xùa)', 'ITEM', 'Phu Sa Phìn(Tà Xùa)', 'Khám phá sống lưng khủng long Tà Xùa và biển mây.', 'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=400&q=80', 11),
+(3, 28, 'Lảo Thẩn', 'ITEM', 'Lảo Thẩn', 'Cung trekking nhẹ nhàng, lý tưởng để săn mây.', 'https://images.unsplash.com/photo-1438786657495-640937046d18?auto=format&fit=crop&w=400&q=80', 12);
 ```
