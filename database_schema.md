@@ -1,9 +1,8 @@
 # Thiết Kế Cơ Sở Dữ Liệu (Database Schema)
+
 Dự án: **Toong Adventure Clone**
 
-Dựa trên tài liệu chức năng (`functional_system.md`), dưới đây là thiết kế chi sở dữ liệu quan hệ (RDBMS) dự kiến (sử dụng MySQL/PostgreSQL) để đáp ứng các tính năng của trang web.
-
-## 1. Sơ Đồ Thực Thể Liên Kết (ERD)
+Dựa trên tài liệu chức năng (`functional_system.md`), dưới đây là thiết kế chi sở dữ liệu quan hệ (RDBMS) dự kiến (sử dụng MySQL/Postgre## 1. Sơ Đồ Thực Thể Liên Kết (ERD)
 
 ```mermaid
 erDiagram
@@ -16,6 +15,78 @@ erDiagram
     DEPARTURES ||--o{ BOOKINGS : "nhận các"
     ADVENTURE_PASSES ||--o{ PASS_FEATURES : "có các quyền lợi"
     ADVENTURE_PASSES ||--o{ PASS_ORDERS : "nhận lượt mua"
+
+    %% RBAC System
+    ROLES ||--o{ EMPLOYEES : "phân cho"
+    ROLES ||--o{ ROLE_PERMISSIONS : "có bộ"
+    PERMISSIONS ||--o{ ROLE_PERMISSIONS : "thuộc về"
+
+    EMPLOYEES {
+        int id PK
+        int role_id FK
+        string username "Tên đăng nhập"
+        string password_hash "Mật khẩu mã hóa"
+        string full_name "Họ và tên"
+        string email
+        string status "active, locked"
+        datetime last_login
+    }
+
+    ROLES {
+        int id PK
+        string name "Tên vai trò (Admin, Editor, Staff)"
+        string code "Mã vai trò (ADMIN, STAFF)"
+    }
+
+    PERMISSIONS {
+        int id PK
+        string name "Tên quyền (Xem Tour, Xoá Đơn)"
+        string code "Mã quyền (tour:view, booking:delete)"
+        string module "Nhóm chức năng (Tour, Booking, Staff)"
+    }
+
+    ROLE_PERMISSIONS {
+        int role_id FK, PK
+        int permission_id FK, PK
+    }
+
+    %% CMS System
+    BANNERS {
+        int id PK
+        string title
+        string image_url
+        string link_url
+        int sort_order
+        boolean is_active
+    }
+
+    BLOG_POSTS {
+        int id PK
+        int author_id FK "Liên kết EMPLOYEES"
+        string title
+        string slug
+        text content
+        string thumbnail
+        string status "draft, published"
+        datetime published_at
+    }
+
+    GENERAL_FAQS {
+        int id PK
+        text question
+        text answer
+        int sort_order
+    }
+
+    CONTACT_MESSAGES {
+        int id PK
+        string full_name
+        string phone
+        string email
+        text message
+        string status "new, contacted, resolved"
+        datetime created_at
+    }
 
     TOURS {
         int id PK
@@ -132,55 +203,38 @@ erDiagram
         string status "pending, paid, cancelled"
         datetime created_at
     }
-
-    MENUS ||--o{ MENUS : "parent of"
-    MENUS }o--o| TOURS : "links to"
-
-    MENUS {
-        int id PK
-        int parent_id FK
-        int tour_id FK
-        string key_name "Logic key"
-        string label "Display name"
-        string href "Link"
-        string type "MEGA_PARENT, SIMPLE, ITEM"
-        string mega_accent_title
-        string mega_main_title
-        text mega_description
-        string mega_image
-        int order_index
-        boolean is_active
-    }
 ```
 
 ## 2. Diễn Giải Các Bảng Chính
 
-### 2.1 Bảng `tours`
-Lưu trữ toàn bộ thông tin gốc, thông tin tra cứu cơ bản của tất cả các cung đường.
-- **Trường quan trọng:** `slug`, `region` (để bộ lọc tìm kiếm hoạt động), `difficulty` (có thể kết nối với bảng Level nếu cần mở rộng, ở đây tạm thời lưu dạng chuỗi), `base_price` (giá tham khảo hiển thị trên card khi chưa chọn ngày).
-- **Mở rộng (Recommendation):** Việc kết nối các Tour tương tự (Similar Tours) có thể thêm một bảng trung gian `similar_tours (tour_id, similar_tour_id)` nếu không muốn hệ thống tự động lọc theo `region` hay `difficulty`.
+### 2.1 Bảng `tours`, `departures`, `bookings`
 
-### 2.2 Bảng `departures` (Lịch khởi hành)
-Mỗi tour sẽ có nhiều ngày khởi hành khác nhau. Client khi chọn trên Booking form sẽ call từ bảng này.
-- **Trường quan trọng:** `start_date`, `end_date`, `price` (giá có thể biến động tùy dịp Lễ/Tết - không nhất thiết giống `base_price` của `tours`), `booked_slots` vs `total_slots` để chặn khách đặt khi đã đầy chỗ.
+Dữ liệu cốt lõi phục vụ luồng khách hàng đặt tour. Giữ nguyên cấu trúc đã thiết kế ở giai đoạn 1.
 
-### 2.3 Bảng `bookings` (Đơn đặt chỗ)
-Quản lý trạng thái mua vé cho 1 kỳ khởi hành cụ thể (`departure_id`).
-- Hệ thống hỗ trợ VNPAY và Chuyển khoản nên cần lưu `payment_method`. Các tiến trình nộp tiền cọc và tất toán phần còn lại sẽ được lưu vết thay đổi vào mục `status` (`pending` -> `deposited` -> `fully_paid`).
+### 2.2 Hệ thống Quản trị & Phân quyền (RBAC)
 
-### 2.4 Bảng `itineraries` và `itinerary_timelines` (Lịch trình & Dòng thời gian)
-Phục vụ chức năng Accordion ở Tour Detail. Tách làm 2 cấp: Cấp "Ngày thứ X" và Cấp "Timeline Giờ Y". Việc phân chia này giúp API trả về cấu trúc mảng lồng nhau chuẩn xác cho Frontend map ra UI.
+- `EMPLOYEES`: Lưu thông tin tài khoản nhân viên vận hành hệ thống.
+- `ROLES`: Định nghĩa các nhóm quyền (ví dụ: `SUPER_ADMIN`, `SALE_MANAGER`).
+- `PERMISSIONS`: Định nghĩa chi tiết các quyền hạn. Mã quyền (`code`) sẽ được dùng để kiểm tra tại Backend và Frontend (ví dụ: `tour:create` để hiện nút Thêm mới).
+- `ROLE_PERMISSIONS`: Bảng trung gian gán tập hợp các quyền cho từng vai trò.
 
-### 2.5 Các bảng bổ trợ cấu hình Tour Detail
-- `tour_cost_details`: Dùng chung cho "Bao gồm" và "Không bao gồm" dựa trên cờ `is_included`.
-- `tour_luggages` và `tour_faqs`: Dữ liệu độc lập đi kèm với mỗi Tour, giúp trang chi tiết không bị hardcode cứng. Khách hàng có thể cấu hình từ Admin Dashboard.
+### 2.3 Hệ thống CMS
 
-### 2.6 Module Adventure Pass (`adventure_passes`, `pass_features`, `pass_orders`)
-Trường hợp thẻ bán theo gói hằng năm tách biệt với Đặt Tour. Bảng này quản lý thông tin các loại thẻ Pass, quyền lợi `features` từng dòng, và danh sách đơn mua `pass_orders`.
+- `BANNERS`: Quản lý hình ảnh và link điều hướng của slider ngoài trang chủ.
+- `BLOG_POSTS`: Lưu trữ các bài viết kinh nghiệm, tin tức. Có liên kết với `EMPLOYEES` để biết người đăng bài.
+- `GENERAL_FAQS`: Các câu hỏi chung về công ty, chính sách thanh toán, bảo hiểm (khác với FAQ riêng của từng tour).
+
+## 3. Lời Khuyên Về Bảo Mật
+
+- Mật khẩu nhân viên trong bảng `EMPLOYEES` phải được mã hóa (Hash) mạnh (như BCrypt).
+- Việc phân quyền granular (`PERMISSIONS`) giúp hệ thống mở rộng linh hoạt sau này mà không cần thay đổi cấu trúc bảng, chỉ cần thêm dữ liệu vào bảng Permission.
+  lý thông tin các loại thẻ Pass, quyền lợi `features` từng dòng, và danh sách đơn mua `pass_orders`.
 
 ## 3. Lời Thuyên Về Hệ Thống Người Dùng (Users / Auth)
+
 Dựa theo functional_system.md, hiện tại giao diện **không có trang Đăng nhập / Đăng ký cá nhân** và việc đặt Tour (Booking) chỉ yêu cầu điền thông tin liên hệ ngay trên Modal.
 Do đó:
+
 - Database hiện tại có thể chưa cần quản lý bảng `users` dành cho Client end-user, mà mọi thông tin liên hệ sẽ bám theo `bookings`.
 - Tuy nhiên, hãy cân nhắc thêm bảng `users` cho những cá nhân có vai trò **Admin**, **System Manager** để có thể phát triển Admin CMS truy cập và quản lý các Đơn hàng (Bookings), Thêm mới Tour.
 

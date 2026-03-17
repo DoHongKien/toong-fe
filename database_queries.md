@@ -1,9 +1,11 @@
 # Truy Vấn Cơ Sở Dữ Liệu (SQL Queries)
+
 Dự án: **Toong Adventure Clone**
 
 Dưới đây là các câu truy vấn SQL mẫu dựa trên kiến trúc schema đã thiết kế để sử dụng cho dự án:
 
 ## 1. Lệnh tạo bảng (Data Definition Language - DDL)
+
 Tham khảo sơ đồ ERD, ta có thể xây dựng các bảng qua file chuẩn `.sql`:
 
 ```sql
@@ -17,7 +19,7 @@ CREATE TABLE tours (
     slug VARCHAR(255) UNIQUE NOT NULL,
     hero_image VARCHAR(500),
     card_image VARCHAR(500),
-    badge VARCHAR(50), 
+    badge VARCHAR(50),
     region ENUM('nam', 'trung', 'taynguyen') NOT NULL,
     duration_days INT DEFAULT 0,
     duration_nights INT DEFAULT 0,
@@ -146,27 +148,93 @@ CREATE TABLE pass_orders (
     FOREIGN KEY (pass_id) REFERENCES adventure_passes(id)
 );
 
--- 12. Bảng MENUS (Quản lý thanh điều hướng động)
-CREATE TABLE menus (
+-- =============================================
+-- MỞ RỘNG: HỆ THỐNG QUẢN TRỊ (ADMIN & RBAC)
+-- =============================================
+
+-- 12. Bảng VAI TRÒ (ROLES)
+CREATE TABLE roles (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    parent_id INT NULL,           -- ID của menu cha (NULL nếu là menu gốc)
-    tour_id INT NULL,             -- Liên kết tới bảng tours
-    key_name VARCHAR(100) UNIQUE NULL, -- Dùng cho logic Frontend (e.g. 'natureWalking')
-    label VARCHAR(255) NOT NULL,
-    href VARCHAR(255) DEFAULT '#',
-    type ENUM('MEGA_PARENT', 'SIMPLE', 'ITEM') DEFAULT 'ITEM',
-    
-    -- Trường mở rộng cho Mega Menu
-    mega_accent_title VARCHAR(255),
-    mega_main_title VARCHAR(255),
-    mega_description TEXT,
-    mega_image VARCHAR(500),
-    
-    order_index INT DEFAULT 0,
-    is_active BOOLEAN DEFAULT TRUE,
-    
-    FOREIGN KEY (parent_id) REFERENCES menus(id) ON DELETE CASCADE,
-    FOREIGN KEY (tour_id) REFERENCES tours(id) ON DELETE SET NULL
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(50) UNIQUE NOT NULL
+);
+
+-- 13. Bảng QUYỀN HẠN (PERMISSIONS)
+CREATE TABLE permissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    module VARCHAR(50) NOT NULL
+);
+
+-- 14. Bảng TRUNG GIAN QUYỀN - VAI TRÒ (ROLE_PERMISSIONS)
+CREATE TABLE role_permissions (
+    role_id INT,
+    permission_id INT,
+    PRIMARY KEY (role_id, permission_id),
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+    FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+);
+
+-- 15. Bảng NHÂN VIÊN (EMPLOYEES)
+CREATE TABLE employees (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    role_id INT,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(100) NOT NULL,
+    email VARCHAR(100),
+    status ENUM('active', 'locked') DEFAULT 'active',
+    last_login TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (role_id) REFERENCES roles(id)
+);
+
+-- =============================================
+-- MỞ RỘNG: HỆ THỐNG CMS (NỘI DUNG ĐỘNG)
+-- =============================================
+
+-- 16. Bảng BANNERS
+CREATE TABLE banners (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255),
+    image_url VARCHAR(500) NOT NULL,
+    link_url VARCHAR(500),
+    sort_order INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+-- 17. Bảng BÀI VIẾT (BLOG_POSTS)
+CREATE TABLE blog_posts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    author_id INT,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    content TEXT NOT NULL,
+    thumbnail VARCHAR(500),
+    status ENUM('draft', 'published') DEFAULT 'draft',
+    published_at DATETIME,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (author_id) REFERENCES employees(id)
+);
+
+-- 18. Bảng FAQ CHUNG (GENERAL_FAQS)
+CREATE TABLE general_faqs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    sort_order INT DEFAULT 0
+);
+
+-- 19. Bảng HỘP THƯ LIÊN HỆ (CONTACT_MESSAGES)
+CREATE TABLE contact_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    email VARCHAR(100),
+    message TEXT NOT NULL,
+    status ENUM('new', 'contacted', 'resolved') DEFAULT 'new',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
@@ -177,28 +245,30 @@ CREATE TABLE menus (
 ### 2.1 Lấy dữ liệu Trang chủ (`Home.jsx`)
 
 **Truy vấn lấy 3 Tour nổi bật nhất / Best Seller:**
+
 ```sql
-SELECT 
-    id, name, slug, card_image AS image, badge, 
-    CONCAT(duration_days, ' Ngày ', duration_nights, ' Đêm') AS duration, 
+SELECT
+    id, name, slug, card_image AS image, badge,
+    CONCAT(duration_days, ' Ngày ', duration_nights, ' Đêm') AS duration,
     difficulty, summary AS descr
-FROM tours 
-ORDER BY id ASC 
+FROM tours
+ORDER BY id ASC
 LIMIT 3;
 ```
 
 ### 2.2 Trang Danh sách Tour (`Tours.jsx`)
 
 **Lọc các tour theo Khu vực và Độ khó**
+
 ```sql
-SELECT 
-    id, name, slug, card_image AS image, badge, 
-    CONCAT(duration_days, 'N', duration_nights, 'Đ') AS duration, 
-    difficulty, region AS location, summary, base_price AS price 
-FROM tours 
-WHERE 
-    region = 'nam' AND 
-    difficulty = 'Dễ' 
+SELECT
+    id, name, slug, card_image AS image, badge,
+    CONCAT(duration_days, 'N', duration_nights, 'Đ') AS duration,
+    difficulty, region AS location, summary, base_price AS price
+FROM tours
+WHERE
+    region = 'nam' AND
+    difficulty = 'Dễ'
 ORDER BY id DESC;
 ```
 
@@ -207,29 +277,32 @@ ORDER BY id DESC;
 Dưới đây là tổ hợp các truy vấn lấy toàn bộ nội dung của trang thông tin khi truy cập /tour-detail/:slug.
 
 **a. Lấy thông tin Header và Body cơ bản:**
+
 ```sql
 SELECT * FROM tours WHERE slug = 'ta-nang-phan-dung' LIMIT 1;
 ```
 
 **b. Lấy Lịch khởi hành (Departures) liên kết để render Slider đăng ký:**
+
 ```sql
-SELECT 
-    id, start_date, end_date, deposit_deadline, payment_deadline, price 
-FROM departures 
-WHERE 
-    tour_id = 1 AND 
-    start_date > CURRENT_DATE() AND 
+SELECT
+    id, start_date, end_date, deposit_deadline, payment_deadline, price
+FROM departures
+WHERE
+    tour_id = 1 AND
+    start_date > CURRENT_DATE() AND
     status = 'active'
 ORDER BY start_date ASC;
 ```
 
 **c. Lấy Lịch trình chi tiết (Itinerary) - Dùng JOIN:**
+
 ```sql
-SELECT 
-    i.day_number, 
-    i.title, 
-    t.execution_time AS time, 
-    t.activity AS description 
+SELECT
+    i.day_number,
+    i.title,
+    t.execution_time AS time,
+    t.activity AS description
 FROM itineraries i
 LEFT JOIN itinerary_timelines t ON i.id = t.itinerary_id
 WHERE i.tour_id = 1
@@ -237,9 +310,10 @@ ORDER BY i.day_number ASC, t.execution_time ASC;
 ```
 
 **d. Lấy Danh sách Chi phí Bao Gồm / Không Bao Gồm:**
+
 ```sql
-SELECT content 
-FROM tour_cost_details 
+SELECT content
+FROM tour_cost_details
 WHERE tour_id = 1 AND is_included = TRUE;
 ```
 
@@ -249,48 +323,83 @@ WHERE tour_id = 1 AND is_included = TRUE;
 
 ```sql
 -- Bước 1: Kiểm tra slot (Ví dụ khách đặt 2 chỗ)
-SELECT booked_slots, total_slots 
-FROM departures 
+SELECT booked_slots, total_slots
+FROM departures
 WHERE id = 5 AND (total_slots - booked_slots) >= 2;
 
 -- Bước 2: Insert 1 bản ghi vào bookings
 INSERT INTO bookings (
-    booking_code, departure_id, first_name, last_name, phone, email, 
+    booking_code, departure_id, first_name, last_name, phone, email,
     quantity, total_amount, deposit_amount, remaining_amount, payment_method, status
 ) VALUES (
-    'TOONG_12345', 5, 'Kien', 'Do', '0933227878', 'kien@domain.com', 
+    'TOONG_12345', 5, 'Kien', 'Do', '0933227878', 'kien@domain.com',
     2, 5980000, 1000000, 4980000, 'bank_transfer', 'pending'
 );
 
 -- Bước 3: Cập nhật lại số slot tại departures (Nếu bước 2 lấy ID thành công)
-UPDATE departures 
-SET booked_slots = booked_slots + 2 
+UPDATE departures
+SET booked_slots = booked_slots + 2
 WHERE id = 5;
 ```
 
 ### 2.5 Bảng Adventure Pass
 
 **Lấy danh sách các loại Pass hiển thị ở `AdventurePass.jsx`:**
+
 ```sql
-SELECT 
-    p.id, p.title, p.subtitle, p.price, p.validity_date, p.is_signature, p.color_theme, 
-    f.content, f.is_bold 
+SELECT
+    p.id, p.title, p.subtitle, p.price, p.validity_date, p.is_signature, p.color_theme,
+    f.content, f.is_bold
 FROM adventure_passes p
 LEFT JOIN pass_features f ON p.id = f.pass_id
 ORDER BY p.price ASC;
 ```
 
----
-### 2.6 Quản lý Menu Động (`Navbar.jsx`)
+### 2.6 Hệ thống Quản trị (Admin Dashboard)
 
-**Lấy toàn bộ cây Menu (Dạng phẳng để xử lý tại Backend/Frontend):**
+**Lấy danh sách quyền hạn của một nhân viên (Dùng cho RBAC check):**
+
 ```sql
-SELECT 
-    m.*, 
-    t.slug AS tour_slug, 
-    t.card_image AS tour_image
-FROM menus m
-LEFT JOIN tours t ON m.tour_id = t.id
-WHERE m.is_active = TRUE
-ORDER BY m.parent_id ASC, m.order_index ASC;
+SELECT p.code
+FROM permissions p
+JOIN role_permissions rp ON p.id = rp.permission_id
+JOIN employees e ON e.role_id = rp.role_id
+WHERE e.username = 'admin_user' AND e.status = 'active';
 ```
+
+**Thêm nhân viên mới và gán vai trò:**
+
+```sql
+-- Thêm vai trò Editor nếu chưa có
+INSERT INTO roles (name, code) VALUES ('Biên tập viên', 'EDITOR');
+
+-- Thêm nhân viên
+INSERT INTO employees (role_id, username, password_hash, full_name, email)
+VALUES (2, 'editor_01', '$2b$12$hashedpassword...', 'Nguyễn Văn A', 'a.nguyen@domain.com');
+```
+
+### 2.7 Trang chủ & CMS nội dung động
+
+**Lấy danh sách Banner đang hoạt động:**
+
+```sql
+SELECT title, image_url, link_url
+FROM banners
+WHERE is_active = TRUE
+ORDER BY sort_order ASC;
+```
+
+**Lấy danh sách bài viết mới nhất (Blog):**
+
+```sql
+SELECT b.title, b.slug, b.thumbnail, b.published_at, e.full_name AS author
+FROM blog_posts b
+JOIN employees e ON b.author_id = e.id
+WHERE b.status = 'published'
+ORDER BY b.published_at DESC
+LIMIT 6;
+```
+
+---
+
+**Gợi ý lập trình:** Trong một REST API chuẩn (hoặc GraphQL, tRPC), nếu một UI như `TourDetail.jsx` cần tải tới 5 Object List (`itinerary`, `costs`, `faqs`, `timelines`, `luggages`), việc mở 5 Queries song song (Ví dụ dùng `Promise.all` hoặc SQL Joins với JSON_AGG) sẽ cho Performance tốt nhất.

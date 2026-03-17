@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ant-design/pro-components": "^2.8.10",
+    "antd": "^5.29.3",
     "axios": "^1.13.6",
     "chart.js": "^4.4.9",
     "lucide-react": "^0.344.0",
