@@ -2,14 +2,11 @@ import { useState } from 'react';
 import { ProTable, ModalForm, ProFormText, ProFormMoney, ProFormSelect } from '@ant-design/pro-components';
 import { Button, message, Space, Popconfirm, Tag, Typography, Modal, Descriptions, Divider } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, CrownOutlined } from '@ant-design/icons';
+import { adminApi } from '../../api/api';
 
 const { Title, Text } = Typography;
 
-const PASS_DATA = [
-  { id: 1, title: 'TRIAL',     subtitle: 'Pass', price: 0,       color_theme: 'bg-green',  perks: 'Trải nghiệm 1 tour miễn phí, không giảm giá' },
-  { id: 2, title: 'SHARING',   subtitle: 'Pass', price: 1000000, color_theme: 'bg-orange', perks: 'Giảm 10% tất cả tour, ưu tiên đặt chỗ' },
-  { id: 3, title: 'ADVENTURE', subtitle: 'Pass', price: 2000000, color_theme: 'bg-dark',   perks: 'Giảm 20%, tour độc quyền, trang bị miễn phí' },
-];
+// Removed static PASS_DATA
 
 const themeConfig = {
   'bg-green':  { label: 'Green (Trial)',     gradient: 'linear-gradient(135deg, #389e0d, #52c41a)' },
@@ -76,7 +73,7 @@ const PassManagement = () => {
       valueType: 'option',
       key: 'option',
       width: 110,
-      render: (_, record) => (
+      render: (_, record, __, action) => (
         <Space size={4}>
           <Button
             size="small"
@@ -92,7 +89,16 @@ const PassManagement = () => {
           <Popconfirm
             title="Xóa gói Pass này?"
             description="Hành động này không thể hoàn tác."
-            onConfirm={() => message.success('Đã xóa gói Pass thành công')}
+            onConfirm={async () => {
+              try {
+                await adminApi.deletePass(record.id);
+                message.success('Đã xóa gói Pass thành công');
+                action?.reload();
+              } catch (err) {
+                console.error(err);
+                message.error('Không thể xóa');
+              }
+            }}
             okText="Xác nhận xóa"
             cancelText="Hủy"
             okButtonProps={{ danger: true }}
@@ -116,7 +122,16 @@ const PassManagement = () => {
       <ProTable
         columns={columns}
         headerTitle={<Text strong style={{ fontSize: 15 }}>Danh sách gói Pass</Text>}
-        request={async () => ({ data: PASS_DATA, success: true })}
+        request={async () => {
+          try {
+            const res = await adminApi.getAllPasses();
+            return { data: res.data?.data || [], success: true };
+          } catch (err) {
+            console.error(err);
+            message.error('Không thể tải danh sách Pass');
+            return { data: [], success: false };
+          }
+        }}
         rowKey="id"
         search={false}
         pagination={false}
@@ -140,9 +155,22 @@ const PassManagement = () => {
         onOpenChange={setModalVisit}
         initialValues={currentRecord || { subtitle: 'Pass' }}
         onFinish={async (values) => {
-          console.log(values);
-          message.success('Đã lưu cấu hình gói Pass');
-          return true;
+          try {
+            if (currentRecord) {
+              await adminApi.updatePass(currentRecord.id, values);
+              message.success('Đã cập nhật gói Pass thành công');
+            } else {
+              await adminApi.createPass(values);
+              message.success('Đã tạo gói Pass mới thành công');
+            }
+            setModalVisit(false);
+            window.location.reload();
+            return true;
+          } catch (err) {
+            console.error(err);
+            message.error('Cập nhật thất bại');
+            return false;
+          }
         }}
         modalProps={{ destroyOnClose: true, centered: true }}
         submitter={{ searchConfig: { submitText: currentRecord ? 'Lưu thay đổi' : 'Tạo gói', resetText: 'Hủy' } }}

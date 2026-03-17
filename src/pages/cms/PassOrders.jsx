@@ -2,14 +2,11 @@ import { useState } from 'react';
 import { ProTable, ModalForm, ProFormSelect } from '@ant-design/pro-components';
 import { Badge, Space, message, Typography, Button, Modal, Tag, Descriptions, Divider, Popconfirm } from 'antd';
 import { EyeOutlined, CheckCircleOutlined, DeleteOutlined, CrownOutlined } from '@ant-design/icons';
+import { adminApi } from '../../api/api';
 
 const { Text, Title } = Typography;
 
-const PASS_ORDERS_DATA = [
-  { id: 101, order_code: 'PASS-9901', first_name: 'Cường', last_name: 'Lê', pass_title: 'ADVENTURE', amount: 2000000, status: 'paid',    created_at: Date.now() - 3600000 },
-  { id: 102, order_code: 'PASS-9902', first_name: 'Thảo',  last_name: 'Phạm', pass_title: 'SHARING', amount: 1000000, status: 'pending', created_at: Date.now() - 7200000 },
-  { id: 103, order_code: 'PASS-9903', first_name: 'Minh',  last_name: 'Trần', pass_title: 'TRIAL',   amount: 0,       status: 'paid',    created_at: Date.now() - 86400000 },
-];
+// Removed static PASS_ORDERS_DATA
 
 const statusConfig = {
   pending:   { color: 'default',  label: 'Chờ thanh toán', badgeStatus: 'default'    },
@@ -140,7 +137,20 @@ const PassOrders = () => {
       <ProTable
         columns={columns}
         headerTitle={<Text strong style={{ fontSize: 15 }}>Danh sách đơn mua Pass</Text>}
-        request={async () => ({ data: PASS_ORDERS_DATA, success: true })}
+        request={async (params) => {
+          try {
+            const res = await adminApi.getPassOrders(params);
+            return {
+              data: res.data?.data || [],
+              success: true,
+              total: res.data?.data?.length
+            };
+          } catch (err) {
+            console.error(err);
+            message.error('Không thể tải danh sách đơn mua Pass');
+            return { data: [], success: false };
+          }
+        }}
         rowKey="id"
         search={{ labelWidth: 'auto' }}
         pagination={{ pageSize: 10 }}
@@ -154,9 +164,17 @@ const PassOrders = () => {
         onOpenChange={setModalVisit}
         initialValues={currentRecord}
         onFinish={async (values) => {
-          console.log(values);
-          message.success('Đã kích hoạt Adventure Pass thành công!');
-          return true;
+          try {
+            await adminApi.updatePassOrderStatus(currentRecord.id, values.status);
+            message.success('Đã cập nhật trạng thái đơn hàng thành công!');
+            setModalVisit(false);
+            window.location.reload();
+            return true;
+          } catch (err) {
+            console.error(err);
+            message.error('Cập nhật thất bại');
+            return false;
+          }
         }}
         modalProps={{ destroyOnClose: true, centered: true }}
         submitter={{ searchConfig: { submitText: 'Xác nhận kích hoạt', resetText: 'Hủy' } }}

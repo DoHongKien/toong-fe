@@ -2,47 +2,11 @@ import { useState } from 'react';
 import { ProTable, ModalForm, ProFormText, ProFormSelect, ProFormDigit, ProFormTextArea, ProFormMoney } from '@ant-design/pro-components';
 import { Button, Tag, Space, message, Popconfirm, Modal, Descriptions, Divider, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { adminApi } from '../../api/api';
 
 const { Title, Text } = Typography;
 
-const TOURS_DATA = [
-  {
-    id: 1,
-    name: 'Tà Năng - Phan Dũng',
-    slug: 'ta-nang-phan-dung',
-    region: 'nam',
-    duration_days: 3,
-    duration_nights: 2,
-    difficulty: 'Thử thách',
-    base_price: 3500000,
-    badge: 'Best Seller',
-    summary: 'Cung đường trekking đẹp nhất Việt Nam, vượt qua những thảo nguyên cỏ vàng mênh mông tuyệt đẹp.',
-  },
-  {
-    id: 2,
-    name: 'Bidoup - Núi Bà',
-    slug: 'bidoup-nui-ba',
-    region: 'nam',
-    duration_days: 2,
-    duration_nights: 1,
-    difficulty: 'Vừa phải',
-    base_price: 1800000,
-    badge: 'New',
-    summary: 'Khám phá nóc nhà tỉnh Lâm Đồng, nơi có hệ sinh thái rừng thông nguyên sinh đặc sắc.',
-  },
-  {
-    id: 3,
-    name: 'Cung Đường Gia Lai',
-    slug: 'cung-duong-gia-lai',
-    region: 'taynguyen',
-    duration_days: 4,
-    duration_nights: 3,
-    difficulty: 'Thử thách',
-    base_price: 4200000,
-    badge: null,
-    summary: 'Hành trình khám phá đại ngàn Tây Nguyên hùng vĩ với những cánh rừng già bí ẩn.',
-  },
-];
+// Removed static TOURS_DATA as we'll use API
 
 const difficultyStyle = {
   'Dễ':       { color: 'green',  bg: 'rgba(82,196,26,0.1)' },
@@ -151,7 +115,7 @@ const ToursManagement = () => {
       valueType: 'option',
       key: 'option',
       width: 160,
-      render: (_, record) => (
+      render: (_, record, __, action) => (
         <Space size={4}>
           <Button
             size="small" type="default" icon={<EyeOutlined />}
@@ -164,7 +128,16 @@ const ToursManagement = () => {
           <Popconfirm
             title="Xóa tour này?"
             description="Hành động này không thể hoàn tác."
-            onConfirm={() => message.success('Đã xóa tour thành công')}
+            onConfirm={async () => {
+              try {
+                await adminApi.deleteTour(record.id);
+                message.success('Đã xóa tour thành công');
+                action?.reload();
+              } catch (err) {
+                console.error(err);
+                message.error('Không thể xóa tour');
+              }
+            }}
             okText="Xác nhận xóa"
             cancelText="Hủy"
             okButtonProps={{ danger: true }}
@@ -188,8 +161,18 @@ const ToursManagement = () => {
       <ProTable
         columns={columns}
         request={async (params) => {
-          console.log(params);
-          return { data: TOURS_DATA, success: true };
+          try {
+            const res = await adminApi.getAllTours(params);
+            return { 
+              data: res.data?.data || [], 
+              success: true,
+              total: res.data?.data?.length // Replace with actual total if backend supports it
+            };
+          } catch (err) {
+            console.error(err);
+            message.error('Không thể tải danh sách tour');
+            return { data: [], success: false };
+          }
         }}
         rowKey="id"
         search={{ labelWidth: 'auto' }}
@@ -216,9 +199,22 @@ const ToursManagement = () => {
         onOpenChange={setModalVisit}
         initialValues={currentRecord || { region: 'nam', difficulty: 'Vừa phải' }}
         onFinish={async (values) => {
-          console.log(values);
-          message.success(currentRecord ? 'Đã cập nhật tour thành công' : 'Đã tạo tour mới thành công');
-          return true;
+          try {
+            if (currentRecord) {
+              await adminApi.updateTour(currentRecord.id, values);
+              message.success('Đã cập nhật tour thành công');
+            } else {
+              await adminApi.createTour(values);
+              message.success('Đã tạo tour mới thành công');
+            }
+            setModalVisit(false);
+            window.location.reload(); // Quick reload or use actionRef
+            return true;
+          } catch (err) {
+            console.error(err);
+            message.error('Có lỗi xảy ra, vui lòng thử lại');
+            return false;
+          }
         }}
         modalProps={{ destroyOnClose: true, centered: true, width: 800 }}
         layout="horizontal"

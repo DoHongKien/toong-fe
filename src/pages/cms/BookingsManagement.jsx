@@ -2,53 +2,11 @@ import { useState } from 'react';
 import { ProTable, ModalForm, ProFormSelect, ProFormMoney, ProFormText } from '@ant-design/pro-components';
 import { Button, Tag, Space, message, Typography, Popconfirm, Badge, Modal, Descriptions, Divider } from 'antd';
 import { EyeOutlined, EditOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { adminApi } from '../../api/api';
 
 const { Text, Title } = Typography;
 
-const BOOKINGS_DATA = [
-  {
-    id: 1,
-    booking_code: 'BK-10293',
-    first_name: 'An',
-    last_name: 'Nguyễn Văn',
-    phone: '0912345678',
-    quantity: 2,
-    total_amount: 7000000,
-    deposit_amount: 2000000,
-    remaining_amount: 5000000,
-    payment_method: 'bank_transfer',
-    status: 'pending',
-    created_at: Date.now() - 3600000,
-  },
-  {
-    id: 2,
-    booking_code: 'BK-10294',
-    first_name: 'Bình',
-    last_name: 'Lê Thị',
-    phone: '0987654321',
-    quantity: 1,
-    total_amount: 3500000,
-    deposit_amount: 3500000,
-    remaining_amount: 0,
-    payment_method: 'momo',
-    status: 'paid',
-    created_at: Date.now() - 86400000,
-  },
-  {
-    id: 3,
-    booking_code: 'BK-10295',
-    first_name: 'Cường',
-    last_name: 'Phạm Hữu',
-    phone: '0911223344',
-    quantity: 4,
-    total_amount: 14000000,
-    deposit_amount: 4000000,
-    remaining_amount: 10000000,
-    payment_method: 'cash',
-    status: 'deposited',
-    created_at: Date.now() - 43200000,
-  },
-];
+// Removed static BOOKINGS_DATA
 
 const paymentLabel = { bank_transfer: 'Chuyển khoản', cash: 'Tiền mặt', momo: 'Momo' };
 const statusConfig = {
@@ -163,7 +121,16 @@ const BookingsManagement = () => {
             <Popconfirm
               title="Xác nhận đơn hàng?"
               description="Khách hàng đã chuyển cọc?"
-              onConfirm={() => message.success('Đã xác nhận thanh toán cọc')}
+              onConfirm={async () => {
+                try {
+                  await adminApi.updateBookingStatus(record.id, 'deposited');
+                  message.success('Đã xác nhận thanh toán cọc');
+                  action?.reload();
+                } catch (err) {
+                  console.error(err);
+                  message.error('Không thể xác nhận');
+                }
+              }}
               okText="Duyệt"
               cancelText="Hủy"
             >
@@ -188,8 +155,18 @@ const BookingsManagement = () => {
         columns={columns}
         headerTitle={<Text strong style={{ fontSize: 15 }}>Danh sách đơn đặt tour</Text>}
         request={async (params) => {
-          console.log(params);
-          return { data: BOOKINGS_DATA, success: true };
+          try {
+            const res = await adminApi.getAllBookings(params);
+            return {
+              data: res.data?.data || [],
+              success: true,
+              total: res.data?.data?.length
+            };
+          } catch (err) {
+            console.error(err);
+            message.error('Không thể tải danh sách booking');
+            return { data: [], success: false };
+          }
         }}
         rowKey="id"
         search={{ labelWidth: 'auto' }}
@@ -204,9 +181,17 @@ const BookingsManagement = () => {
         onOpenChange={setModalVisit}
         initialValues={currentRecord}
         onFinish={async (values) => {
-          console.log(values);
-          message.success('Cập nhật trạng thái đơn hàng thành công');
-          return true;
+          try {
+            await adminApi.updateBooking(currentRecord.id, values);
+            message.success('Cập nhật trạng thái đơn hàng thành công');
+            setModalVisit(false);
+            window.location.reload();
+            return true;
+          } catch (err) {
+            console.error(err);
+            message.error('Cập nhật thất bại');
+            return false;
+          }
         }}
         modalProps={{ destroyOnClose: true, centered: true }}
       >
