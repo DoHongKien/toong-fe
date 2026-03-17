@@ -1,5 +1,4 @@
-import React from 'react';
-import { Row, Col, Card, Statistic, Typography, Timeline, Tag, Avatar, Progress } from 'antd';
+import { Row, Col, Card, Statistic, Typography, Timeline, Tag, Progress } from 'antd';
 import {
   EnvironmentOutlined,
   CalendarOutlined,
@@ -8,7 +7,6 @@ import {
   ArrowUpOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
-  TeamOutlined,
   CrownOutlined,
 } from '@ant-design/icons';
 

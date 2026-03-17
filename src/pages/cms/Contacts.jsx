@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ProTable } from '@ant-design/pro-components';
-import { Button, Space, Tag, message, Modal, Badge, Descriptions, Divider, Typography, Popconfirm } from 'antd';
+import { Button, Space, message, Modal, Badge, Descriptions, Divider, Typography, Popconfirm } from 'antd';
 import { EyeOutlined, CheckCircleOutlined, DeleteOutlined, MailOutlined } from '@ant-design/icons';
 
 const { Text, Title } = Typography;

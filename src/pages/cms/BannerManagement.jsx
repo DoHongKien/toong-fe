@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ProTable, ModalForm, ProFormText, ProFormSelect } from '@ant-design/pro-components';
 import { Button, Image, Space, message, Popconfirm, Tag, Modal, Descriptions, Divider, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, PictureOutlined } from '@ant-design/icons';
