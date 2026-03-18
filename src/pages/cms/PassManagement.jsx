@@ -49,9 +49,9 @@ const PassManagement = () => {
       sorter: (a, b) => a.price - b.price,
       width: 160,
       render: (price) => (
-        price === 0
+        (price ?? 0) === 0
           ? <Tag color="green" style={{ fontSize: 12 }}>Miễn phí</Tag>
-          : <Text strong style={{ color: '#1F4529', fontSize: 13 }}>{price.toLocaleString('vi-VN')}đ</Text>
+          : <Text strong style={{ color: '#1F4529', fontSize: 13 }}>{(price ?? 0).toLocaleString('vi-VN')}đ</Text>
       ),
     },
     {
@@ -122,10 +122,11 @@ const PassManagement = () => {
       <ProTable
         columns={columns}
         headerTitle={<Text strong style={{ fontSize: 15 }}>Danh sách gói Pass</Text>}
-        request={async () => {
+        request={async (params) => {
           try {
-            const res = await adminApi.getAllPasses();
-            return { data: res.data?.data || [], success: true };
+            const res = await adminApi.getAllPasses(params);
+            const raw = res.data?.data;
+            return { data: Array.isArray(raw) ? raw : [], success: true };
           } catch (err) {
             console.error(err);
             message.error('Không thể tải danh sách Pass');
@@ -221,7 +222,7 @@ const PassManagement = () => {
                   {currentRecord.title} <span style={{ fontWeight: 400, fontSize: 16 }}>{currentRecord.subtitle}</span>
                 </div>
                 <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: 600, marginTop: 4 }}>
-                  {currentRecord.price === 0 ? 'Miễn phí' : `${currentRecord.price.toLocaleString('vi-VN')}đ`}
+                  {(currentRecord.price ?? 0) === 0 ? 'Miễn phí' : `${(currentRecord.price ?? 0).toLocaleString('vi-VN')}đ`}
                 </div>
               </div>
             </div>
@@ -229,9 +230,9 @@ const PassManagement = () => {
             <Descriptions column={1} bordered size="small">
               <Descriptions.Item label="Tên gói">{currentRecord.title} {currentRecord.subtitle}</Descriptions.Item>
               <Descriptions.Item label="Giá niêm yết">
-                {currentRecord.price === 0
+                {(currentRecord.price ?? 0) === 0
                   ? <Tag color="green">Miễn phí</Tag>
-                  : <Text strong style={{ color: '#1F4529' }}>{currentRecord.price.toLocaleString('vi-VN')}đ</Text>
+                  : <Text strong style={{ color: '#1F4529' }}>{(currentRecord.price ?? 0).toLocaleString('vi-VN')}đ</Text>
                 }
               </Descriptions.Item>
               <Descriptions.Item label="Theme">{themeConfig[currentRecord.color_theme]?.label}</Descriptions.Item>

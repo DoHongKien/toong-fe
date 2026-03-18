@@ -2,13 +2,9 @@ import { useState } from 'react';
 import { ProTable, ModalForm, ProFormText, ProFormSelect, ProFormTextArea } from '@ant-design/pro-components';
 import { Button, Space, Tag, message, Popconfirm, Modal, Descriptions, Divider, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { adminApi } from '../../api/api';
 
 const { Text, Title } = Typography;
-
-const BLOG_DATA = [
-  { id: 1, title: 'Kinh nghiệm leo núi Tà Năng mùa cỏ xanh', author: 'Admin', category: 'Kinh nghiệm', status: 'published', created_at: Date.now(), summary: 'Tà Năng – Phan Dũng được mệnh danh là cung đường trekking đẹp nhất Việt Nam...' },
-  { id: 2, title: 'Top 5 điểm cắm trại đẹp tại Lâm Đồng',   author: 'Admin', category: 'Địa điểm',  status: 'draft',     created_at: Date.now() - 86400000, summary: 'Lâm Đồng không chỉ nổi tiếng với Đà Lạt...' },
-];
 
 const BlogManagement = () => {
   const [modalVisit, setModalVisit] = useState(false);
@@ -29,18 +25,11 @@ const BlogManagement = () => {
       formItemProps: { rules: [{ required: true }] },
     },
     {
-      title: 'Danh mục',
-      dataIndex: 'category',
-      width: 120,
-      render: (cat) => <Tag color="blue" style={{ fontSize: 12 }}>{cat}</Tag>,
-      valueEnum: { 'Kinh nghiệm': { text: 'Kinh nghiệm' }, 'Địa điểm': { text: 'Địa điểm' }, 'Tin tức': { text: 'Tin tức' }, 'Hướng dẫn': { text: 'Hướng dẫn' } },
-    },
-    {
       title: 'Trạng thái',
       dataIndex: 'status',
       width: 120,
       valueEnum: {
-        published: { text: 'Đã đăng', status: 'Success' },
+        published: { text: 'Đã đăng',  status: 'Success' },
         draft:     { text: 'Bản nháp', status: 'Default' },
       },
       render: (_, record) => (
@@ -49,19 +38,38 @@ const BlogManagement = () => {
         </Tag>
       ),
     },
-    { title: 'Ngày đăng', dataIndex: 'created_at', valueType: 'date', search: false, width: 110 },
+    {
+      title: 'Ngày đăng',
+      dataIndex: 'publishedAt',
+      valueType: 'date',
+      search: false,
+      width: 120,
+      render: (_, record) => record.publishedAt
+        ? new Date(record.publishedAt).toLocaleDateString('vi-VN')
+        : <Text type="secondary">—</Text>,
+    },
     {
       title: 'Thao tác',
       valueType: 'option',
       key: 'option',
       width: 110,
-      render: (_, record) => (
+      render: (_, record, __, action) => (
         <Space size={4}>
           <Button size="small" icon={<EyeOutlined />} onClick={() => { setCurrentRecord(record); setShowDetail(true); }} />
           <Button size="small" type="primary" icon={<EditOutlined />} onClick={() => { setCurrentRecord(record); setModalVisit(true); }} />
           <Popconfirm
             title="Xóa bài viết này?" description="Hành động này không thể hoàn tác."
-            onConfirm={() => message.success('Đã xóa bài viết')} okText="Xác nhận xóa" cancelText="Hủy" okButtonProps={{ danger: true }}
+            onConfirm={async () => {
+              try {
+                await adminApi.deleteBlogPost(record.id);
+                message.success('Đã xóa bài viết');
+                action?.reload();
+              } catch (err) {
+                console.error(err);
+                message.error('Không thể xóa bài viết');
+              }
+            }}
+            okText="Xác nhận xóa" cancelText="Hủy" okButtonProps={{ danger: true }}
           >
             <Button size="small" danger icon={<DeleteOutlined />} />
           </Popconfirm>
@@ -80,7 +88,21 @@ const BlogManagement = () => {
       <ProTable
         columns={columns}
         headerTitle={<Text strong style={{ fontSize: 15 }}>Danh sách bài viết</Text>}
-        request={async () => ({ data: BLOG_DATA, success: true })}
+        request={async (params) => {
+          try {
+            const res = await adminApi.getAllBlogPosts(params);
+            const raw = res.data?.data?.data;
+            return {
+              data: Array.isArray(raw) ? raw : [],
+              success: true,
+              total: res.data?.data?.pagination?.total ?? 0,
+            };
+          } catch (err) {
+            console.error(err);
+            message.error('Không thể tải danh sách bài viết');
+            return { data: [], success: false };
+          }
+        }}
         rowKey="id"
         search={{ labelWidth: 'auto' }}
         pagination={{ pageSize: 10 }}
@@ -96,19 +118,32 @@ const BlogManagement = () => {
         title={currentRecord ? 'Chỉnh sửa bài viết' : 'Viết bài mới'}
         open={modalVisit}
         onOpenChange={setModalVisit}
-        initialValues={currentRecord || { status: 'draft', category: 'Kinh nghiệm' }}
-        onFinish={async (values) => { console.log(values); message.success(currentRecord ? 'Đã cập nhật bài viết' : 'Đã tạo bài viết mới'); return true; }}
+        initialValues={currentRecord || { status: 'draft' }}
+        onFinish={async (values) => {
+          try {
+            if (currentRecord) {
+              await adminApi.updateBlogPost(currentRecord.id, values);
+              message.success('Đã cập nhật bài viết');
+            } else {
+              await adminApi.createBlogPost(values);
+              message.success('Đã tạo bài viết mới');
+            }
+            setModalVisit(false);
+            return true;
+          } catch (err) {
+            console.error(err);
+            message.error('Có lỗi xảy ra, vui lòng thử lại');
+            return false;
+          }
+        }}
         modalProps={{ destroyOnClose: true, centered: true, width: 680 }}
         submitter={{ searchConfig: { submitText: currentRecord ? 'Lưu thay đổi' : 'Tạo bài viết', resetText: 'Hủy' } }}
       >
         <ProFormText name="title" label="Tiêu đề" placeholder="Nhập tiêu đề..." rules={[{ required: true }]} />
-        <ProFormText name="author" label="Tác giả" placeholder="Tên tác giả" rules={[{ required: true }]} />
-        <ProFormSelect name="category" label="Danh mục"
-          valueEnum={{ 'Kinh nghiệm': 'Kinh nghiệm', 'Địa điểm': 'Địa điểm', 'Tin tức': 'Tin tức', 'Hướng dẫn': 'Hướng dẫn' }}
-          rules={[{ required: true }]}
-        />
+        <ProFormText name="slug" label="URL Slug" placeholder="kinh-nghiem-trekking-ta-nang" rules={[{ required: true }]} />
+        <ProFormText name="thumbnail" label="Ảnh thumbnail" placeholder="https://..." />
         <ProFormSelect name="status" label="Trạng thái" valueEnum={{ published: 'Đã đăng', draft: 'Bản nháp' }} rules={[{ required: true }]} />
-        <ProFormTextArea name="summary" label="Tóm tắt nội dung" placeholder="Nhập đoạn tóm tắt..." rules={[{ required: true }]} fieldProps={{ rows: 3 }} />
+        <ProFormTextArea name="content" label="Nội dung (HTML)" placeholder="<p>Nội dung...</p>" rules={[{ required: true }]} fieldProps={{ rows: 5 }} />
       </ModalForm>
 
       <Modal
@@ -134,14 +169,11 @@ const BlogManagement = () => {
             </div>
             <Descriptions column={2} bordered size="small">
               <Descriptions.Item label="Tác giả">{currentRecord.author}</Descriptions.Item>
-              <Descriptions.Item label="Danh mục"><Tag color="blue">{currentRecord.category}</Tag></Descriptions.Item>
-              <Descriptions.Item label="Ngày đăng" span={2}>{new Date(currentRecord.created_at).toLocaleDateString('vi-VN')}</Descriptions.Item>
+              <Descriptions.Item label="URL Slug">{currentRecord.slug}</Descriptions.Item>
+              <Descriptions.Item label="Ngày đăng" span={2}>
+                {currentRecord.publishedAt ? new Date(currentRecord.publishedAt).toLocaleDateString('vi-VN') : '—'}
+              </Descriptions.Item>
             </Descriptions>
-            <Divider />
-            <Text strong>Tóm tắt:</Text>
-            <div style={{ marginTop: 8, padding: '10px 14px', background: '#f7f8fa', borderRadius: 6 }}>
-              <Text type="secondary">{currentRecord.summary}</Text>
-            </div>
             <Divider />
             <Space>
               <Button type="primary" icon={<EditOutlined />} onClick={() => { setShowDetail(false); setModalVisit(true); }}>Chỉnh sửa</Button>

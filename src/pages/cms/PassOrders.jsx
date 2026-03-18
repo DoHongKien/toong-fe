@@ -64,9 +64,9 @@ const PassOrders = () => {
       width: 140,
       search: false,
       render: (amount) => (
-        amount === 0
+        (amount ?? 0) === 0
           ? <Tag color="green" style={{ fontSize: 12 }}>Miễn phí</Tag>
-          : <Text strong style={{ color: '#1F4529', fontSize: 13 }}>{amount.toLocaleString('vi-VN')}đ</Text>
+          : <Text strong style={{ color: '#1F4529', fontSize: 13 }}>{(amount ?? 0).toLocaleString('vi-VN')}đ</Text>
       ),
     },
     {
@@ -140,10 +140,11 @@ const PassOrders = () => {
         request={async (params) => {
           try {
             const res = await adminApi.getPassOrders(params);
+            const raw = res.data?.data;
             return {
-              data: res.data?.data || [],
+              data: Array.isArray(raw) ? raw : [],
               success: true,
-              total: res.data?.data?.length
+              total: Array.isArray(raw) ? raw.length : 0,
             };
           } catch (err) {
             console.error(err);
@@ -227,7 +228,7 @@ const PassOrders = () => {
               <div style={{ textAlign: 'right' }}>
                 <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>Số tiền</Text>
                 <div style={{ color: '#fff', fontWeight: 700, fontSize: 20 }}>
-                  {currentRecord.amount === 0 ? 'Miễn phí' : `${currentRecord.amount.toLocaleString('vi-VN')}đ`}
+                  {(currentRecord.amount ?? 0) === 0 ? 'Miễn phí' : `${(currentRecord.amount ?? 0).toLocaleString('vi-VN')}đ`}
                 </div>
               </div>
             </div>

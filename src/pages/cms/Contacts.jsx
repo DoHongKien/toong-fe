@@ -1,15 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { ProTable } from '@ant-design/pro-components';
-import { Button, Space, message, Modal, Badge, Descriptions, Divider, Typography, Popconfirm } from 'antd';
+import { Button, Space, message, Modal, Badge, Descriptions, Divider, Typography, Popconfirm, Select } from 'antd';
 import { EyeOutlined, CheckCircleOutlined, DeleteOutlined, MailOutlined } from '@ant-design/icons';
+import { adminApi } from '../../api/api';
 
 const { Text, Title } = Typography;
-
-const CONTACTS_DATA = [
-  { id: 1, name: 'Lê Văn B',     phone: '0988776655', email: 'levanb@gmail.com',   message: 'Tôi muốn tư vấn tour Tà Năng cho đoàn 10 người.', created_at: Date.now(),          status: 'new'       },
-  { id: 2, name: 'Trần Thị C',   phone: '0912334455', email: 'thic@gmail.com',      message: 'Cho hỏi tour Bidoup có khởi hành cuối tuần không?', created_at: Date.now() - 3600000, status: 'contacted' },
-  { id: 3, name: 'Nguyễn Minh D', phone: '0977112233', email: 'minhd@gmail.com',  message: 'Tôi muốn đặt Adventure Pass cho nhóm 5 người.', created_at: Date.now() - 86400000, status: 'resolved'  },
-];
 
 const statusConfig = {
   new:       { color: 'processing', label: 'Mới',         badgeStatus: 'processing' },
@@ -20,14 +15,38 @@ const statusConfig = {
 const Contacts = () => {
   const [currentRecord, setCurrentRecord] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
+  const actionRef = useRef();
+
+  const updateStatus = async (id, status) => {
+    try {
+      await adminApi.updateContactStatus(id, status);
+      message.success('Đã cập nhật trạng thái');
+      actionRef.current?.reload();
+      setShowDetail(false);
+    } catch (err) {
+      console.error(err);
+      message.error('Không thể cập nhật trạng thái');
+    }
+  };
+
+  const deleteContact = async (id) => {
+    try {
+      await adminApi.deleteContact(id);
+      message.success('Đã xóa liên hệ');
+      actionRef.current?.reload();
+    } catch (err) {
+      console.error(err);
+      message.error('Không thể xóa liên hệ');
+    }
+  };
 
   const columns = [
     {
       title: 'Người gửi',
-      dataIndex: 'name',
+      dataIndex: 'full_name',
       render: (_, record) => (
         <Space direction="vertical" size={0}>
-          <Text strong style={{ fontSize: 13 }}>{record.name}</Text>
+          <Text strong style={{ fontSize: 13 }}>{record.full_name}</Text>
           <Text type="secondary" style={{ fontSize: 11 }}>{record.phone} · {record.email}</Text>
         </Space>
       ),
@@ -71,7 +90,7 @@ const Contacts = () => {
           {record.status === 'new' && (
             <Popconfirm
               title="Đánh dấu đã liên hệ?"
-              onConfirm={() => message.success('Đã cập nhật trạng thái')}
+              onConfirm={() => updateStatus(record.id, 'contacted')}
               okText="Xác nhận" cancelText="Hủy"
             >
               <Button size="small" style={{ color: '#1F4529', borderColor: '#1F4529' }} icon={<CheckCircleOutlined />} />
@@ -79,7 +98,8 @@ const Contacts = () => {
           )}
           <Popconfirm
             title="Xóa liên hệ này?" description="Hành động này không thể hoàn tác."
-            onConfirm={() => message.success('Đã xóa liên hệ')} okText="Xác nhận xóa" cancelText="Hủy" okButtonProps={{ danger: true }}
+            onConfirm={() => deleteContact(record.id)}
+            okText="Xác nhận xóa" cancelText="Hủy" okButtonProps={{ danger: true }}
           >
             <Button size="small" danger icon={<DeleteOutlined />} />
           </Popconfirm>
@@ -97,8 +117,23 @@ const Contacts = () => {
 
       <ProTable
         columns={columns}
+        actionRef={actionRef}
         headerTitle={<Text strong style={{ fontSize: 15 }}>Danh sách tin nhắn</Text>}
-        request={async () => ({ data: CONTACTS_DATA, success: true })}
+        request={async (params) => {
+          try {
+            const res = await adminApi.getAllContacts(params);
+            const raw = res.data?.data;
+            return {
+              data: Array.isArray(raw) ? raw : [],
+              success: true,
+              total: res.data?.pagination?.total,
+            };
+          } catch (err) {
+            console.error(err);
+            message.error('Không thể tải danh sách liên hệ');
+            return { data: [], success: false };
+          }
+        }}
         rowKey="id"
         search={{ labelWidth: 'auto' }}
         pagination={{ pageSize: 10 }}
@@ -106,14 +141,13 @@ const Contacts = () => {
       />
 
       <Modal
-        title={currentRecord ? `Tin nhắn từ: ${currentRecord.name}` : ''}
+        title={currentRecord ? `Tin nhắn từ: ${currentRecord.full_name}` : ''}
         open={showDetail}
         onCancel={() => { setShowDetail(false); setCurrentRecord(null); }}
         centered width={600} footer={null} destroyOnClose
       >
         {currentRecord?.id && (
           <>
-            {/* Summary strip */}
             <div style={{
               background: 'linear-gradient(135deg, #0D2E2A 0%, #1F4529 100%)',
               borderRadius: 8, padding: '14px 18px', marginBottom: 16,
@@ -127,7 +161,7 @@ const Contacts = () => {
                 <MailOutlined style={{ color: '#fff', fontSize: 22 }} />
               </div>
               <div>
-                <div style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>{currentRecord.name}</div>
+                <div style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>{currentRecord.full_name}</div>
                 <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>{currentRecord.phone} · {currentRecord.email}</div>
                 <div style={{ marginTop: 4 }}>
                   <Badge status={statusConfig[currentRecord.status]?.badgeStatus}
@@ -148,14 +182,16 @@ const Contacts = () => {
 
             <Divider />
             <Space>
-              {currentRecord.status === 'new' && (
-                <Button
-                  type="primary"
-                  icon={<CheckCircleOutlined />}
-                  onClick={() => { message.success('Đã đánh dấu đã liên hệ'); setShowDetail(false); }}
-                >
-                  Đánh dấu đã liên hệ
-                </Button>
+              {currentRecord.status !== 'resolved' && (
+                <Select
+                  placeholder="Cập nhật trạng thái"
+                  style={{ width: 180 }}
+                  onChange={(val) => updateStatus(currentRecord.id, val)}
+                  options={[
+                    { label: 'Đã liên hệ', value: 'contacted' },
+                    { label: 'Đã xử lý', value: 'resolved' },
+                  ]}
+                />
               )}
               <Button onClick={() => setShowDetail(false)}>Đóng</Button>
             </Space>

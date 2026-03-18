@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import {
   Layout, Menu, Button, ConfigProvider, Avatar, Dropdown, Badge, Breadcrumb, Typography,
-  Popover, List, Divider, Tooltip
+  Popover, List, Tooltip
 } from 'antd';
 import vi_VN from 'antd/locale/vi_VN';
 import {
@@ -54,6 +55,7 @@ const INITIAL_NOTIFICATIONS = [
 ];
 
 const CMSLayout = () => {
+  const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [bellOpen, setBellOpen] = useState(false);
@@ -340,7 +342,7 @@ const CMSLayout = () => {
                 menu={{
                   items: userMenuItems,
                   onClick: ({ key }) => {
-                    if (key === 'logout') navigate('/cms/login');
+                    if (key === 'logout') logout();
                     if (key === 'profile') navigate('/cms/profile');
                   },
                 }}
@@ -362,8 +364,8 @@ const CMSLayout = () => {
                   />
                   {!collapsed && (
                     <div style={{ lineHeight: 1.3 }}>
-                      <div style={{ fontWeight: 600, fontSize: 13, color: '#1a1a1a' }}>Admin</div>
-                      <div style={{ fontSize: 11, color: '#999' }}>Quản trị viên</div>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: '#1a1a1a' }}>{user?.full_name || 'Admin'}</div>
+                      <div style={{ fontSize: 11, color: '#999' }}>{user?.role?.name || 'Quản trị viên'}</div>
                     </div>
                   )}
                 </div>

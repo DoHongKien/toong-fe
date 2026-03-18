@@ -1,4 +1,5 @@
-import { Row, Col, Card, Statistic, Typography, Timeline, Tag, Progress } from 'antd';
+import { useEffect, useState } from 'react';
+import { Row, Col, Card, Statistic, Typography, Tag, Progress, Spin } from 'antd';
 import {
   EnvironmentOutlined,
   CalendarOutlined,
@@ -8,42 +9,45 @@ import {
   ClockCircleOutlined,
   CheckCircleOutlined,
   CrownOutlined,
+  MailOutlined,
 } from '@ant-design/icons';
+import { adminApi } from '../../api/api';
 
 const { Title, Text } = Typography;
 
-const StatCard = ({ title, value, suffix, prefix, trend, trendLabel, color, bg, icon }) => (
+const StatCard = ({ title, value, suffix, trend, trendLabel, color, bg, icon, loading }) => (
   <Card
     style={{
-      borderRadius: 10,
-      border: 'none',
+      borderRadius: 10, border: 'none',
       boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-      overflow: 'hidden',
-      position: 'relative',
+      overflow: 'hidden', position: 'relative',
     }}
     styles={{ body: { padding: '20px 24px' } }}
   >
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
       <div>
         <Text style={{ fontSize: 13, color: '#888', display: 'block', marginBottom: 6 }}>{title}</Text>
-        <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.2 }}>
-          {typeof value === 'number' ? value.toLocaleString('vi-VN') : value}
-          {suffix && <span style={{ fontSize: 13, fontWeight: 500, color: '#666', marginLeft: 4 }}>{suffix}</span>}
-        </div>
-        {trend !== undefined && (
-          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <ArrowUpOutlined style={{ color: '#52c41a', fontSize: 12 }} />
-            <Text style={{ fontSize: 12, color: '#52c41a', fontWeight: 600 }}>+{trend}%</Text>
-            <Text style={{ fontSize: 12, color: '#aaa' }}>{trendLabel}</Text>
-          </div>
+        {loading ? (
+          <Spin size="small" />
+        ) : (
+          <>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.2 }}>
+              {typeof value === 'number' ? value.toLocaleString('vi-VN') : (value ?? '—')}
+              {suffix && <span style={{ fontSize: 13, fontWeight: 500, color: '#666', marginLeft: 4 }}>{suffix}</span>}
+            </div>
+            {trendLabel && (
+              <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Text style={{ fontSize: 12, color: '#aaa' }}>{trendLabel}</Text>
+              </div>
+            )}
+          </>
         )}
       </div>
       <div style={{
         width: 48, height: 48, borderRadius: 12,
         background: bg,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 22, color,
-        flexShrink: 0,
+        fontSize: 22, color, flexShrink: 0,
       }}>
         {icon}
       </div>
@@ -52,132 +56,64 @@ const StatCard = ({ title, value, suffix, prefix, trend, trendLabel, color, bg, 
 );
 
 const Dashboard = () => {
-  const recentActivities = [
-    { color: 'green', dot: <CheckCircleOutlined />, label: 'Booking BK-10295 đã được xác nhận', time: '5 phút trước' },
-    { color: 'blue', dot: <CalendarOutlined />, label: 'Tour "Tà Năng - Phan Dũng" có thêm 3 booking mới', time: '1 giờ trước' },
-    { color: 'orange', dot: <CrownOutlined />, label: 'Hội viên Lê Cường kích hoạt Adventure Pass', time: '2 giờ trước' },
-    { color: 'purple', dot: <UserOutlined />, label: 'Nhân viên mới Trần Minh A được thêm vào hệ thống', time: '5 giờ trước' },
-    { color: 'green', dot: <CheckCircleOutlined />, label: 'Tour "Bidoup - Núi Bà" đã được cập nhật lịch khởi hành', time: 'Hôm qua' },
-  ];
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const topTours = [
-    { name: 'Tà Năng - Phan Dũng', bookings: 48, revenue: 168000000, pct: 90 },
-    { name: 'Bidoup - Núi Bà', bookings: 31, revenue: 55800000, pct: 65 },
-    { name: 'Cung Đường Gia Lai', bookings: 19, revenue: 47500000, pct: 40 },
-  ];
+  useEffect(() => {
+    adminApi.getDashboardStats()
+      .then(res => setStats(res.data?.data))
+      .catch(err => console.error('Dashboard stats error:', err))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div>
       {/* Page header */}
       <div style={{ marginBottom: 24 }}>
         <Title level={4} style={{ margin: 0, color: '#1a1a1a' }}>Tổng quan hệ thống</Title>
-        <Text style={{ color: '#888', fontSize: 13 }}>Chào mừng trở lại, Admin! Đây là tóm tắt hoạt động hôm nay.</Text>
+        <Text style={{ color: '#888', fontSize: 13 }}>Đây là tóm tắt hoạt động hệ thống.</Text>
       </div>
 
       {/* Stat cards */}
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} lg={6}>
           <StatCard
+            loading={loading}
             title="Tổng số Tour"
-            value={12}
-            trend={8}
-            trendLabel="so tháng trước"
+            value={stats?.total_tours}
             icon={<EnvironmentOutlined />}
-            color="#1F4529"
-            bg="rgba(31,69,41,0.1)"
+            color="#1F4529" bg="rgba(31,69,41,0.1)"
           />
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <StatCard
+            loading={loading}
             title="Booking tháng này"
-            value={48}
-            trend={14}
-            trendLabel="so tháng trước"
+            value={stats?.bookings_this_month}
+            trendLabel={`Tổng: ${stats?.total_bookings ?? '—'} đơn`}
             icon={<CalendarOutlined />}
-            color="#1677ff"
-            bg="rgba(22,119,255,0.1)"
+            color="#1677ff" bg="rgba(22,119,255,0.1)"
           />
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <StatCard
+            loading={loading}
             title="Doanh thu tháng"
-            value={112893000}
+            value={stats?.revenue_this_month}
             suffix="đ"
-            trend={22}
-            trendLabel="so tháng trước"
+            trendLabel={`Tổng: ${stats?.total_revenue?.toLocaleString('vi-VN') ?? '—'}đ`}
             icon={<RiseOutlined />}
-            color="#d46b08"
-            bg="rgba(212,107,8,0.1)"
+            color="#d46b08" bg="rgba(212,107,8,0.1)"
           />
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <StatCard
-            title="Hội viên Pass"
-            value={320}
-            trend={5}
-            trendLabel="so tháng trước"
-            icon={<CrownOutlined />}
-            color="#722ed1"
-            bg="rgba(114,46,209,0.1)"
+            loading={loading}
+            title="Nhân viên"
+            value={stats?.total_employees}
+            icon={<UserOutlined />}
+            color="#722ed1" bg="rgba(114,46,209,0.1)"
           />
-        </Col>
-      </Row>
-
-      <Row gutter={[16, 16]} style={{ marginTop: 20 }}>
-        {/* Recent activity */}
-        <Col xs={24} lg={14}>
-          <Card
-            title={<span style={{ fontWeight: 600 }}>Hoạt động gần đây</span>}
-            style={{ borderRadius: 10, border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', height: '100%' }}
-            styles={{ header: { borderBottom: '1px solid #f0f0f0' } }}
-          >
-            <Timeline
-              items={recentActivities.map(a => ({
-                color: a.color,
-                dot: a.dot,
-                children: (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Text style={{ fontSize: 13 }}>{a.label}</Text>
-                    <Text style={{ fontSize: 11, color: '#bbb', whiteSpace: 'nowrap', marginLeft: 12 }}>
-                      <ClockCircleOutlined style={{ marginRight: 3 }} />{a.time}
-                    </Text>
-                  </div>
-                ),
-              }))}
-            />
-          </Card>
-        </Col>
-
-        {/* Top tours */}
-        <Col xs={24} lg={10}>
-          <Card
-            title={<span style={{ fontWeight: 600 }}>Tour nổi bật</span>}
-            style={{ borderRadius: 10, border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', height: '100%' }}
-            styles={{ header: { borderBottom: '1px solid #f0f0f0' } }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              {topTours.map((tour, i) => (
-                <div key={i}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <Text style={{ fontSize: 13, fontWeight: 500 }}>{tour.name}</Text>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <Tag color="green" style={{ margin: 0, fontSize: 11 }}>{tour.bookings} booking</Tag>
-                    </div>
-                  </div>
-                  <Progress
-                    percent={tour.pct}
-                    showInfo={false}
-                    strokeColor={{ from: '#1F4529', to: '#47663B' }}
-                    trailColor="#f0f0f0"
-                    size="small"
-                  />
-                  <Text style={{ fontSize: 11, color: '#999' }}>
-                    Doanh thu: {tour.revenue.toLocaleString('vi-VN')}đ
-                  </Text>
-                </div>
-              ))}
-            </div>
-          </Card>
         </Col>
       </Row>
 
@@ -186,20 +122,30 @@ const Dashboard = () => {
         <Col xs={24} sm={8}>
           <Card style={{ borderRadius: 10, border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}
             styles={{ body: { padding: '16px' } }}>
-            <Statistic title="Booking chờ xác nhận" value={7} valueStyle={{ color: '#fa8c16', fontWeight: 700 }} />
+            <Statistic
+              title="Booking chờ xác nhận"
+              value={loading ? '—' : (stats?.pending_bookings ?? 0)}
+              valueStyle={{ color: '#fa8c16', fontWeight: 700 }}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card style={{ borderRadius: 10, border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}
             styles={{ body: { padding: '16px' } }}>
-            <Statistic title="Liên hệ chưa xử lý" value={4} valueStyle={{ color: '#1677ff', fontWeight: 700 }} />
+            <Statistic
+              title="Liên hệ chưa xử lý"
+              value={loading ? '—' : (stats?.new_contact_messages ?? 0)}
+              valueStyle={{ color: '#1677ff', fontWeight: 700 }}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card style={{ borderRadius: 10, border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}
             styles={{ body: { padding: '16px' } }}>
-            <Statistic title="Nhân viên hoạt động" value={5} valueStyle={{ color: '#1F4529', fontWeight: 700 }}
-              suffix={<Text style={{ fontSize: 13, color: '#999' }}>/ 6</Text>}
+            <Statistic
+              title="Tổng Tour đang hoạt động"
+              value={loading ? '—' : (stats?.total_tours ?? 0)}
+              valueStyle={{ color: '#1F4529', fontWeight: 700 }}
             />
           </Card>
         </Col>

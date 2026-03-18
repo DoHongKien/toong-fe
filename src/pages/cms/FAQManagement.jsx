@@ -2,14 +2,9 @@ import { useState } from 'react';
 import { ProTable, ModalForm, ProFormTextArea, ProFormDigit } from '@ant-design/pro-components';
 import { Button, Space, message, Popconfirm, Modal, Divider, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { adminApi } from '../../api/api';
 
 const { Text, Title } = Typography;
-
-const FAQ_DATA = [
-  { id: 1, question: 'Tour có bao gồm bảo hiểm không?',   answer: 'Có, toàn bộ tour đều bao gồm bảo hiểm du lịch trong suốt hành trình.', order: 1 },
-  { id: 2, question: 'Cần chuẩn bị gì khi đi trekking?', answer: 'Bạn cần chuẩn bị giày trekking, trang phục thoải mái, bình nước và thuốc cá nhân.', order: 2 },
-  { id: 3, question: 'Có thể hủy tour trước bao lâu?',    answer: 'Bạn có thể hủy tour trước 7 ngày mà không mất phí cọc.', order: 3 },
-];
 
 const FAQManagement = () => {
   const [modalVisit, setModalVisit] = useState(false);
@@ -31,8 +26,8 @@ const FAQManagement = () => {
     },
     {
       title: 'Thứ tự',
-      dataIndex: 'order',
-      sorter: (a, b) => a.order - b.order,
+      dataIndex: 'sort_order',
+      sorter: (a, b) => a.sort_order - b.sort_order,
       width: 80,
       search: false,
     },
@@ -41,13 +36,23 @@ const FAQManagement = () => {
       valueType: 'option',
       key: 'option',
       width: 110,
-      render: (_, record) => (
+      render: (_, record, __, action) => (
         <Space size={4}>
           <Button size="small" icon={<EyeOutlined />} onClick={() => { setCurrentRecord(record); setShowDetail(true); }} />
           <Button size="small" type="primary" icon={<EditOutlined />} onClick={() => { setCurrentRecord(record); setModalVisit(true); }} />
           <Popconfirm
             title="Xóa câu hỏi này?" description="Hành động này không thể hoàn tác."
-            onConfirm={() => message.success('Đã xóa câu hỏi')} okText="Xác nhận xóa" cancelText="Hủy" okButtonProps={{ danger: true }}
+            onConfirm={async () => {
+              try {
+                await adminApi.deleteFaq(record.id);
+                message.success('Đã xóa câu hỏi');
+                action?.reload();
+              } catch (err) {
+                console.error(err);
+                message.error('Không thể xóa câu hỏi');
+              }
+            }}
+            okText="Xác nhận xóa" cancelText="Hủy" okButtonProps={{ danger: true }}
           >
             <Button size="small" danger icon={<DeleteOutlined />} />
           </Popconfirm>
@@ -66,9 +71,19 @@ const FAQManagement = () => {
       <ProTable
         columns={columns}
         headerTitle={<Text strong style={{ fontSize: 15 }}>Danh sách câu hỏi</Text>}
-        request={async () => ({ data: FAQ_DATA, success: true })}
+        request={async () => {
+          try {
+            const res = await adminApi.getAllFaqs();
+            const raw = res.data?.data;
+            return { data: Array.isArray(raw) ? raw : [], success: true };
+          } catch (err) {
+            console.error(err);
+            message.error('Không thể tải danh sách FAQ');
+            return { data: [], success: false };
+          }
+        }}
         rowKey="id"
-        search={{ labelWidth: 'auto' }}
+        search={false}
         pagination={{ pageSize: 10 }}
         toolBarRender={() => [
           <Button key="add" type="primary" icon={<PlusOutlined />} onClick={() => { setCurrentRecord(null); setModalVisit(true); }}>
@@ -82,14 +97,30 @@ const FAQManagement = () => {
         title={currentRecord ? 'Chỉnh sửa câu hỏi' : 'Thêm câu hỏi FAQ mới'}
         open={modalVisit}
         onOpenChange={setModalVisit}
-        initialValues={currentRecord || { order: FAQ_DATA.length + 1 }}
-        onFinish={async (values) => { console.log(values); message.success(currentRecord ? 'Đã cập nhật câu hỏi' : 'Đã thêm câu hỏi mới'); return true; }}
+        initialValues={currentRecord || { sort_order: 1 }}
+        onFinish={async (values) => {
+          try {
+            if (currentRecord) {
+              await adminApi.updateFaq(currentRecord.id, values);
+              message.success('Đã cập nhật câu hỏi');
+            } else {
+              await adminApi.createFaq(values);
+              message.success('Đã thêm câu hỏi mới');
+            }
+            setModalVisit(false);
+            return true;
+          } catch (err) {
+            console.error(err);
+            message.error('Có lỗi xảy ra, vui lòng thử lại');
+            return false;
+          }
+        }}
         modalProps={{ destroyOnClose: true, centered: true, width: 620 }}
         submitter={{ searchConfig: { submitText: currentRecord ? 'Lưu thay đổi' : 'Thêm mới', resetText: 'Hủy' } }}
       >
         <ProFormTextArea name="question" label="Câu hỏi" placeholder="Nhập câu hỏi thường gặp..." rules={[{ required: true }]} fieldProps={{ rows: 2 }} />
         <ProFormTextArea name="answer" label="Câu trả lời" placeholder="Nhập nội dung trả lời..." rules={[{ required: true }]} fieldProps={{ rows: 4 }} />
-        <ProFormDigit name="order" label="Thứ tự" min={1} width="xs" />
+        <ProFormDigit name="sort_order" label="Thứ tự" min={1} width="xs" />
       </ModalForm>
 
       <Modal
@@ -106,7 +137,7 @@ const FAQManagement = () => {
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             }}>
               <div>
-                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Câu hỏi #{currentRecord.order}</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Câu hỏi #{currentRecord.sort_order}</Text>
                 <div style={{ color: '#fff', fontWeight: 600, fontSize: 14, maxWidth: 400 }}>{currentRecord.question}</div>
               </div>
             </div>

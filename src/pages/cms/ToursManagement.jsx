@@ -6,8 +6,6 @@ import { adminApi } from '../../api/api';
 
 const { Title, Text } = Typography;
 
-// Removed static TOURS_DATA as we'll use API
-
 const difficultyStyle = {
   'Dễ':       { color: 'green',  bg: 'rgba(82,196,26,0.1)' },
   'Vừa phải': { color: 'orange', bg: 'rgba(250,140,22,0.1)' },
@@ -89,7 +87,7 @@ const ToursManagement = () => {
       width: 130,
       render: (price) => (
         <Text strong style={{ color: '#1F4529', fontSize: 13 }}>
-          {price.toLocaleString('vi-VN')}đ
+          {(price ?? 0).toLocaleString('vi-VN')}đ
         </Text>
       ),
     },
@@ -163,10 +161,11 @@ const ToursManagement = () => {
         request={async (params) => {
           try {
             const res = await adminApi.getAllTours(params);
+            const raw = res.data?.data;
             return { 
-              data: res.data?.data || [], 
+              data: Array.isArray(raw) ? raw : [], 
               success: true,
-              total: res.data?.data?.length // Replace with actual total if backend supports it
+              total: Array.isArray(raw) ? raw.length : 0,
             };
           } catch (err) {
             console.error(err);
@@ -278,7 +277,7 @@ const ToursManagement = () => {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ color: '#E8ECD7', fontSize: 20, fontWeight: 700 }}>
-                  {currentRecord.base_price.toLocaleString('vi-VN')}đ
+                  {(currentRecord.base_price ?? 0).toLocaleString('vi-VN')}đ
                 </div>
                 <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>/ người</Text>
               </div>
