@@ -19,6 +19,8 @@ import BannerManagement from './pages/cms/BannerManagement'
 import BlogManagement from './pages/cms/BlogManagement'
 import FAQManagement from './pages/cms/FAQManagement'
 import TourFAQManagement from './pages/cms/TourFAQManagement'
+import TourCostDetailManagement from './pages/cms/TourCostDetailManagement'
+import TourLuggageManagement from './pages/cms/TourLuggageManagement'
 import Contacts from './pages/cms/Contacts'
 import Profile from './pages/cms/Profile'
 import NotificationConfig from './pages/cms/NotificationConfig'
@@ -56,6 +58,8 @@ const App = () => {
             <Route path="blogs" element={<BlogManagement />} />
             <Route path="faqs" element={<FAQManagement />} />
             <Route path="tours/:tourId/faqs" element={<TourFAQManagement />} />
+            <Route path="tours/:tourId/cost-details" element={<TourCostDetailManagement />} />
+            <Route path="tours/:tourId/luggages" element={<TourLuggageManagement />} />
             <Route path="contacts" element={<Contacts />} />
             <Route path="staff" element={<StaffManagement />} />
             <Route path="profile" element={<Profile />} />

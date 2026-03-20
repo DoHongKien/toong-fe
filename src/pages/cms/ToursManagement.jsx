@@ -4,9 +4,9 @@ import { ProTable } from '@ant-design/pro-components';
 import {
   Button, Tag, Space, message, Popconfirm, Modal, Descriptions,
   Divider, Typography, Upload, Spin, Form, Row, Col, Input,
-  Select, InputNumber, Tooltip,
+  Select, InputNumber, Tooltip, Collapse, Switch,
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, EnvironmentOutlined, InboxOutlined, PictureOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, EnvironmentOutlined, InboxOutlined, PictureOutlined, QuestionCircleOutlined, DollarOutlined, TagsOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import { adminApi } from '../../api/api';
 
 const { Title, Text } = Typography;
@@ -252,6 +252,167 @@ const TourForm = ({ record, cardImagePreview, uploading, onImageUpload, onCancel
               autoSize={{ minRows: 3, maxRows: 5 }}
             />
           </Form.Item>
+
+          <Divider style={{ margin: '18px 0 10px' }} />
+
+          {/* ── Cost Details inline ── */}
+          <Collapse
+            size="small"
+            style={{ marginBottom: 12 }}
+            items={[{
+              key: 'cost',
+              label: <span style={{ fontSize: 13, fontWeight: 600, color: '#1a3d2e' }}>Chi phí bao gồm / không bao gồm</span>,
+              children: (
+                <Form.List name="costDetails">
+                  {(fields, { add, remove }) => (
+                    <>
+                      {fields.map(({ key, name, ...restField }) => (
+                        <div key={key} style={{
+                          display: 'flex', gap: 8, alignItems: 'flex-start',
+                          padding: '10px 12px', marginBottom: 8,
+                          background: '#f9fafb', borderRadius: 8, border: '1px solid #eee',
+                        }}>
+                          <Form.Item {...restField} name={[name, 'isIncluded']} valuePropName="checked"
+                            initialValue={true} style={{ marginBottom: 0, flexShrink: 0, marginTop: 4 }}>
+                            <Switch
+                              checkedChildren="Bao gồm"
+                              unCheckedChildren="Không"
+                              style={{ minWidth: 90 }}
+                            />
+                          </Form.Item>
+                          <Form.Item {...restField} name={[name, 'content']}
+                            rules={[{ required: true, message: 'Nhập nội dung' }]}
+                            style={{ marginBottom: 0, flex: 1 }}>
+                            <Input placeholder="VD: Xe khứ hồi, bữa sáng ngày 1..." />
+                          </Form.Item>
+                          <Form.Item {...restField} name={[name, 'sortOrder']}
+                            initialValue={fields.length + 1}
+                            style={{ marginBottom: 0, width: 64 }}>
+                            <InputNumber min={1} placeholder="Thứ tự" style={{ width: '100%' }} />
+                          </Form.Item>
+                          <Button
+                            type="text" danger icon={<MinusCircleOutlined />}
+                            onClick={() => remove(name)}
+                            style={{ marginTop: 4, flexShrink: 0 }}
+                          />
+                        </div>
+                      ))}
+                      <Button
+                        type="dashed" onClick={() => add({ isIncluded: true, sortOrder: fields.length + 1 })}
+                        icon={<PlusOutlined />} size="small" block
+                      >
+                        Thêm mục chi phí
+                      </Button>
+                    </>
+                  )}
+                </Form.List>
+              ),
+            }]}
+          />
+
+          {/* ── Luggages inline ── */}
+          <Collapse
+            size="small"
+            items={[{
+              key: 'luggage',
+              label: <span style={{ fontSize: 13, fontWeight: 600, color: '#1a3d2e' }}>Hành lý & Trang bị cần mang</span>,
+              children: (
+                <Form.List name="luggages">
+                  {(fields, { add, remove }) => (
+                    <>
+                      {fields.map(({ key, name, ...restField }) => (
+                        <div key={key} style={{
+                          display: 'flex', gap: 8, alignItems: 'flex-start',
+                          padding: '10px 12px', marginBottom: 8,
+                          background: '#f9fafb', borderRadius: 8, border: '1px solid #eee',
+                        }}>
+                          <Form.Item {...restField} name={[name, 'name']}
+                            rules={[{ required: true, message: 'Nhập tên' }]}
+                            style={{ marginBottom: 0, width: 120 }}>
+                            <Input placeholder="VD: GIÀY" />
+                          </Form.Item>
+                          <Form.Item {...restField} name={[name, 'detail']}
+                            rules={[{ required: true, message: 'Nhập mô tả' }]}
+                            style={{ marginBottom: 0, flex: 1 }}>
+                            <Input placeholder="Mô tả yêu cầu cụ thể..." />
+                          </Form.Item>
+                          <Form.Item {...restField} name={[name, 'sortOrder']}
+                            initialValue={fields.length + 1}
+                            style={{ marginBottom: 0, width: 64 }}>
+                            <InputNumber min={1} placeholder="Thứ tự" style={{ width: '100%' }} />
+                          </Form.Item>
+                          <Button
+                            type="text" danger icon={<MinusCircleOutlined />}
+                            onClick={() => remove(name)}
+                            style={{ marginTop: 4, flexShrink: 0 }}
+                          />
+                        </div>
+                      ))}
+                      <Button
+                        type="dashed" onClick={() => add({ sortOrder: fields.length + 1 })}
+                        icon={<PlusOutlined />} size="small" block
+                      >
+                        Thêm hành lý
+                      </Button>
+                    </>
+                  )}
+                </Form.List>
+              ),
+            }]}
+          />
+
+          {/* ── FAQs inline ── */}
+          <Collapse
+            size="small"
+            items={[{
+              key: 'faqs',
+              label: <span style={{ fontSize: 13, fontWeight: 600, color: '#1a3d2e' }}>Câu hỏi thường gặp (FAQ)</span>,
+              children: (
+                <Form.List name="faqs">
+                  {(fields, { add, remove }) => (
+                    <>
+                      {fields.map(({ key, name, ...restField }) => (
+                        <div key={key} style={{
+                          padding: '12px 12px 4px', marginBottom: 8,
+                          background: '#f9fafb', borderRadius: 8, border: '1px solid #eee',
+                          position: 'relative',
+                        }}>
+                          <Button
+                            type="text" danger icon={<MinusCircleOutlined />} size="small"
+                            onClick={() => remove(name)}
+                            style={{ position: 'absolute', top: 8, right: 8 }}
+                          />
+                          <Form.Item {...restField} name={[name, 'question']}
+                            rules={[{ required: true, message: 'Nhập câu hỏi' }]}
+                            style={{ marginBottom: 8 }}>
+                            <Input placeholder="Câu hỏi..." />
+                          </Form.Item>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <Form.Item {...restField} name={[name, 'answer']}
+                              rules={[{ required: true, message: 'Nhập câu trả lời' }]}
+                              style={{ marginBottom: 8, flex: 1 }}>
+                              <Input.TextArea placeholder="Câu trả lời..." autoSize={{ minRows: 1, maxRows: 4 }} />
+                            </Form.Item>
+                            <Form.Item {...restField} name={[name, 'sortOrder']}
+                              initialValue={fields.length + 1}
+                              style={{ marginBottom: 8, width: 64 }}>
+                              <InputNumber min={1} placeholder="Thứ tự" style={{ width: '100%' }} />
+                            </Form.Item>
+                          </div>
+                        </div>
+                      ))}
+                      <Button
+                        type="dashed" onClick={() => add({ sortOrder: fields.length + 1 })}
+                        icon={<PlusOutlined />} size="small" block
+                      >
+                        Thêm câu hỏi FAQ
+                      </Button>
+                    </>
+                  )}
+                </Form.List>
+              ),
+            }]}
+          />
         </Col>
       </Row>
 
@@ -424,7 +585,7 @@ const ToursManagement = () => {
       title: 'Thao tác',
       valueType: 'option',
       key: 'option',
-      width: 160,
+      width: 200,
       render: (_, record, __, action) => (
         <Space size={4}>
           <Tooltip title="Xem chi tiết">
@@ -445,6 +606,22 @@ const ToursManagement = () => {
               icon={<QuestionCircleOutlined />}
               style={{ color: '#1F4529', borderColor: '#1F4529' }}
               onClick={() => navigate(`/cms/tours/${record.id}/faqs`)}
+            />
+          </Tooltip>
+          <Tooltip title="Chi phí bao gồm / không bao gồm">
+            <Button
+              size="small"
+              icon={<DollarOutlined />}
+              style={{ color: '#d46b08', borderColor: '#d46b08' }}
+              onClick={() => navigate(`/cms/tours/${record.id}/cost-details`)}
+            />
+          </Tooltip>
+          <Tooltip title="Hành lý & Trang bị">
+            <Button
+              size="small"
+              icon={<TagsOutlined />}
+              style={{ color: '#0958d9', borderColor: '#0958d9' }}
+              onClick={() => navigate(`/cms/tours/${record.id}/luggages`)}
             />
           </Tooltip>
           <Popconfirm

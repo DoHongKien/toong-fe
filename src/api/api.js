@@ -66,6 +66,7 @@ export const navApi = {
 export const adminApi = {
   // Tours
   getAllTours: (params) => api.get("/admin/tours", { params }),
+  getTourById: (id) => api.get(`/admin/tours/${id}`),
   createTour: (data) => api.post("/admin/tours", data),
   updateTour: (id, data) => api.put(`/admin/tours/${id}`, data),
   deleteTour: (id) => api.delete(`/admin/tours/${id}`),
@@ -111,6 +112,18 @@ export const adminApi = {
   createTourFaq: (data) => api.post("/admin/tour-faqs", data),
   updateTourFaq: (id, data) => api.put(`/admin/tour-faqs/${id}`, data),
   deleteTourFaq: (id) => api.delete(`/admin/tour-faqs/${id}`),
+
+  // Tour Cost Details
+  getTourCostDetails: (tourId) => api.get("/admin/tour-cost-details", { params: { tourId } }),
+  createTourCostDetail: (data) => api.post("/admin/tour-cost-details", data),
+  updateTourCostDetail: (id, data) => api.put(`/admin/tour-cost-details/${id}`, data),
+  deleteTourCostDetail: (id) => api.delete(`/admin/tour-cost-details/${id}`),
+
+  // Tour Luggages
+  getTourLuggages: (tourId) => api.get("/admin/tour-luggages", { params: { tourId } }),
+  createTourLuggage: (data) => api.post("/admin/tour-luggages", data),
+  updateTourLuggage: (id, data) => api.put(`/admin/tour-luggages/${id}`, data),
+  deleteTourLuggage: (id) => api.delete(`/admin/tour-luggages/${id}`),
 
   // Contact Messages
   getAllContacts: (params) => api.get("/admin/contact-messages", { params }),

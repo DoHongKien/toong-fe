@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card, Form, Input, Button, Typography, Alert } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { authApi } from '../../api/api';
 
@@ -9,9 +9,13 @@ const { Title, Text } = Typography;
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  if (isAuthenticated) {
+    return <Navigate to="/cms" replace />
+  }
 
   const onFinish = async (values) => {
     setLoading(true);

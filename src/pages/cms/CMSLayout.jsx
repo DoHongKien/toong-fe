@@ -156,9 +156,11 @@ const CMSLayout = () => {
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await adminApi.getNotifications({ limit: 20 })
-      const data = res.data?.data ?? []
+      const inner = res.data?.data ?? {}
+      const data = Array.isArray(inner.data) ? inner.data : Array.isArray(inner) ? inner : []
+      const count = inner.unreadCount ?? data.filter(n => !n.isRead).length
       setNotifications(data)
-      setUnreadCount(res.data?.unreadCount ?? data.filter(n => !n.isRead).length)
+      setUnreadCount(count)
     } catch {
       // silent fail — avoid crashing UI
     }
@@ -172,6 +174,8 @@ const CMSLayout = () => {
   }, [fetchNotifications])
 
   const markAsRead = async (id) => {
+    const notif = notifications.find(n => n.id === id)
+    if (!notif || notif.isRead) return
     try {
       await adminApi.markNotificationRead(id)
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n))
@@ -241,7 +245,7 @@ const CMSLayout = () => {
 
   const handleMenuClick = ({ key }) => { navigate(key) }
 
-  const notificationPopoverContent = (
+  const NotificationPopover = () => (
     <div style={{ width: isMobile ? 300 : 340 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #f0f0f0' }}>
         <span style={{ fontWeight: 600, fontSize: 14 }}>Thông báo</span>
@@ -275,41 +279,38 @@ const CMSLayout = () => {
                 background: item.isRead ? '#fff' : '#f0f7ff',
                 borderBottom: '1px solid #fafafa',
                 transition: 'background 0.15s',
+                alignItems: 'flex-start',
               }}
               onMouseEnter={e => e.currentTarget.style.background = item.isRead ? '#fafafa' : '#e6f4ff'}
               onMouseLeave={e => e.currentTarget.style.background = item.isRead ? '#fff' : '#f0f7ff'}
               onClick={() => markAsRead(item.id)}
-              actions={[
-                !item.isRead && (
-                  <Tooltip title="Đánh dấu đã đọc" key="read">
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, width: '100%' }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+                  background: item.isRead ? '#f5f5f5' : '#e6f4ff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
+                }}>
+                  {NOTIF_ICON[item.type] ?? <BellOutlined />}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: item.isRead ? 400 : 600, color: '#1a1a1a', marginBottom: 2 }}>
+                    {item.title}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#666', marginBottom: 2 }}>{item.description}</div>
+                  <div style={{ fontSize: 11, color: '#999' }}>{timeAgo(item.createdAt)}</div>
+                </div>
+                {!item.isRead && (
+                  <Tooltip title="Đánh dấu đã đọc">
                     <Button
                       type="text" size="small"
                       icon={<CheckOutlined style={{ fontSize: 11 }} />}
                       onClick={(e) => { e.stopPropagation(); markAsRead(item.id) }}
-                      style={{ color: '#1677ff', padding: '0 4px' }}
+                      style={{ color: '#1677ff', padding: '0 4px', flexShrink: 0 }}
                     />
                   </Tooltip>
-                ),
-              ].filter(Boolean)}
-            >
-              <List.Item.Meta
-                avatar={
-                  <div style={{
-                    width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-                    background: item.isRead ? '#f5f5f5' : '#e6f4ff',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
-                  }}>
-                    {NOTIF_ICON[item.type] ?? <BellOutlined />}
-                  </div>
-                }
-                title={<span style={{ fontSize: 13, fontWeight: item.isRead ? 400 : 600, color: '#1a1a1a' }}>{item.title}</span>}
-                description={
-                  <span style={{ fontSize: 11, color: '#999' }}>
-                    <span style={{ display: 'block', color: '#666', marginBottom: 1 }}>{item.description}</span>
-                    {timeAgo(item.createdAt)}
-                  </span>
-                }
-              />
+                )}
+              </div>
             </List.Item>
           )}
         />
@@ -457,7 +458,7 @@ const CMSLayout = () => {
                 trigger="click"
                 arrow={false}
                 styles={{ body: { padding: 0 } }}
-                content={notificationPopoverContent}
+                content={<NotificationPopover />}
               >
                 <Badge count={unreadCount} size="small">
                   <Button
