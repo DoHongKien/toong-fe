@@ -100,11 +100,17 @@ export const adminApi = {
   updateBlogPost: (id, data) => api.put(`/admin/blog-posts/${id}`, data),
   deleteBlogPost: (id) => api.delete(`/admin/blog-posts/${id}`),
 
-  // FAQs
+  // FAQs (website chung)
   getAllFaqs: () => api.get("/admin/faqs"),
   createFaq: (data) => api.post("/admin/faqs", data),
   updateFaq: (id, data) => api.put(`/admin/faqs/${id}`, data),
   deleteFaq: (id) => api.delete(`/admin/faqs/${id}`),
+
+  // Tour FAQs (gắn với từng tour)
+  getTourFaqs: (tourId) => api.get("/admin/tour-faqs", { params: { tourId } }),
+  createTourFaq: (data) => api.post("/admin/tour-faqs", data),
+  updateTourFaq: (id, data) => api.put(`/admin/tour-faqs/${id}`, data),
+  deleteTourFaq: (id) => api.delete(`/admin/tour-faqs/${id}`),
 
   // Contact Messages
   getAllContacts: (params) => api.get("/admin/contact-messages", { params }),
@@ -114,14 +120,51 @@ export const adminApi = {
 
   // Employees (Staff)
   getAllEmployees: (params) => api.get("/admin/employees", { params }),
+  getAllEmployeesFlat: () => api.get("/admin/employees/all"),
   createEmployee: (data) => api.post("/admin/employees", data),
   updateEmployee: (id, data) => api.put(`/admin/employees/${id}`, data),
   updateEmployeeStatus: (id, status) =>
     api.patch(`/admin/employees/${id}/status`, { status }),
   deleteEmployee: (id) => api.delete(`/admin/employees/${id}`),
 
+  // Roles
+  getAllRoles: () => api.get("/admin/roles"),
+  createRole: (data) => api.post("/admin/roles", data),
+  updateRole: (id, data) => api.put(`/admin/roles/${id}`, data),
+  deleteRole: (id) => api.delete(`/admin/roles/${id}`),
+
+  // Profile (bản thân)
+  getProfile: () => api.get("/admin/profile"),
+  updateProfile: (data) => api.put("/admin/profile", data),
+  changePassword: (data) => api.post("/admin/profile/change-password", data),
+
   // Dashboard
   getDashboardStats: () => api.get("/admin/dashboard/stats"),
+
+  // Notifications
+  getNotifications: (params) => api.get("/admin/notifications", { params }),
+  markNotificationRead: (id) => api.patch(`/admin/notifications/${id}/read`),
+  markAllNotificationsRead: () => api.patch("/admin/notifications/read-all"),
+
+  // Notification Configs (CRUD)
+  getNotificationConfigs: () => api.get("/admin/notification-configs"),
+  createNotificationConfig: (data) => api.post("/admin/notification-configs", data),
+  updateNotificationConfig: (id, data) => api.put(`/admin/notification-configs/${id}`, data),
+  toggleNotificationConfig: (id, isActive) => api.patch(`/admin/notification-configs/${id}/status`, { isActive }),
+  deleteNotificationConfig: (id) => api.delete(`/admin/notification-configs/${id}`),
+
+  // Media
+  uploadImage: (file) => {
+    const formData = new FormData()
+    formData.append("file", file)
+    const token = localStorage.getItem("toong_cms_token")
+    return api.post("/media/upload-image", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+  },
 };
 
 export default api;

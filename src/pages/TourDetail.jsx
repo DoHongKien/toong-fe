@@ -62,50 +62,154 @@ const AccordionItem = ({ title, content, isOpen, onClick }) => (
   </div>
 )
 
-const DepartureCarousel = ({ departures, onSelect }) => {
-  const scrollRef = useRef(null)
-
-  const scroll = (dir) => {
-    if (scrollRef.current) {
-      const { scrollLeft, clientWidth } = scrollRef.current
-      const offset = dir === 'left' ? -clientWidth / 2 : clientWidth / 2
-      scrollRef.current.scrollTo({ left: scrollLeft + offset, behavior: 'smooth' })
-    }
+const useDisplayCount = () => {
+  const getCount = () => {
+    if (window.innerWidth >= 992) return 3
+    if (window.innerWidth >= 600) return 2
+    return 1
   }
+  const [count, setCount] = useState(getCount)
 
-  if (!departures || departures.length === 0) return (
+  useEffect(() => {
+    const handleResize = () => setCount(getCount())
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  return count
+}
+
+const DepartureCarousel = ({ departures, onSelect }) => {
+  const displayCount = useDisplayCount()
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isTransitioning, setIsTransitioning] = useState(true)
+  const totalItems = departures?.length ?? 0
+
+  // Reset to 0 when displayCount changes (e.g. window resize) to avoid broken position
+  useEffect(() => {
+    setIsTransitioning(false)
+    setCurrentIndex(0)
+    const t = setTimeout(() => setIsTransitioning(true), 50)
+    return () => clearTimeout(t)
+  }, [displayCount])
+
+  // Auto-play
+  useEffect(() => {
+    if (totalItems <= displayCount) return
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => prev + 1)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [totalItems, displayCount])
+
+  // Infinite loop: reached end → silent jump to start
+  useEffect(() => {
+    if (currentIndex === totalItems) {
+      const timer = setTimeout(() => {
+        setIsTransitioning(false)
+        setCurrentIndex(0)
+      }, 600)
+      return () => clearTimeout(timer)
+    }
+  }, [currentIndex, totalItems])
+
+  // Re-enable transition after silent jump
+  useEffect(() => {
+    if (!isTransitioning && currentIndex === 0) {
+      const timer = setTimeout(() => setIsTransitioning(true), 50)
+      return () => clearTimeout(timer)
+    }
+  }, [isTransitioning, currentIndex])
+
+  if (!departures || totalItems === 0) return (
     <div className="no-departures">Hiện chưa có lịch khởi hành mới.</div>
   )
 
+  const extendedDepartures = [...departures, ...departures.slice(0, displayCount)]
+
+  // Gap between cards in rem — must match CSS .departure-carousel-slider gap
+  const GAP_REM = 2
+
+  const handlePrev = () => {
+    if (!isTransitioning) return
+    setCurrentIndex((prev) => {
+      if (prev === 0) {
+        setIsTransitioning(false)
+        setTimeout(() => {
+          setCurrentIndex(totalItems)
+          setTimeout(() => {
+            setIsTransitioning(true)
+            setCurrentIndex(totalItems - 1)
+          }, 50)
+        }, 0)
+        return prev
+      }
+      return prev - 1
+    })
+  }
+
+  const handleNext = () => setCurrentIndex((prev) => prev + 1)
+
+  // Card width = (100% - gaps-between-visible-cards) / displayCount
+  // Each step moves exactly one card width including its trailing gap
+  const cardWidthPct = 100 / displayCount
+  const gapPerCard = GAP_REM * (displayCount - 1) / displayCount
+  const translateX = `calc(-${currentIndex * cardWidthPct}% - ${currentIndex * (GAP_REM - gapPerCard)}rem)`
+
   return (
     <div className="departure-carousel-wrapper">
-      <button className="carousel-nav prev" onClick={() => scroll('left')} aria-label="Trước">
+      <button className="carousel-nav prev" onClick={handlePrev} aria-label="Trước">
         <ChevronLeft />
       </button>
-      <div className="departure-carousel" ref={scrollRef}>
-        {departures.map((d) => (
-          <div className="departure-card" key={d.id}>
-            <div className="d-date">
-              <span className="d-label">BẮT ĐẦU</span>
-              <span className="d-val">{new Date(d.startDate).toLocaleDateString('vi-VN')}</span>
+      <div className="departure-carousel-viewport">
+        <div
+          className="departure-carousel-slider"
+          style={{
+            '--dc-count': displayCount,
+            transform: `translateX(${translateX})`,
+            transition: isTransitioning ? 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+          }}
+        >
+          {extendedDepartures.map((d, idx) => (
+            <div className="departure-card-flex" key={`${d.id}-${idx}`}>
+              <div className="departure-card">
+                <div className="d-date">
+                  <span className="d-label">BẮT ĐẦU</span>
+                  <span className="d-val">{new Date(d.startDate).toLocaleDateString('vi-VN')}</span>
+                </div>
+                <div className="d-date">
+                  <span className="d-label">KẾT THÚC</span>
+                  <span className="d-val">{new Date(d.endDate).toLocaleDateString('vi-VN')}</span>
+                </div>
+                <div className="d-price">
+                  <span className="d-label">GIÁ TOUR</span>
+                  <span className="d-val primary">{formatVND(d.price)}</span>
+                </div>
+                <button className="btn btn-primary btn-sm" onClick={() => onSelect(d)}>
+                  Đăng ký ngay
+                </button>
+              </div>
             </div>
-            <div className="d-date">
-              <span className="d-label">KẾT THÚC</span>
-              <span className="d-val">{new Date(d.endDate).toLocaleDateString('vi-VN')}</span>
-            </div>
-            <div className="d-price">
-              <span className="d-label">GIÁ TOUR</span>
-              <span className="d-val primary">{formatVND(d.price)}</span>
-            </div>
-            <button className="btn btn-primary btn-sm" onClick={() => onSelect(d)}>
-              Đăng ký ngay
-            </button>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-      <button className="carousel-nav next" onClick={() => scroll('right')} aria-label="Sau">
+      <button className="carousel-nav next" onClick={handleNext} aria-label="Sau">
         <ChevronRight />
       </button>
+      {totalItems > displayCount && (
+        <div className="carousel-dots">
+          {departures.map((_, i) => (
+            <button
+              key={i}
+              className={`dot ${(currentIndex % totalItems) === i ? 'active' : ''}`}
+              onClick={() => {
+                setIsTransitioning(true)
+                setCurrentIndex(i)
+              }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,25 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
 /* =========================================
    VARIABLES & RESET
 ========================================= */
 :root {
-    /* Colors */
-    --color-primary: #1F4529; /* Deep Forest Green */
-    --color-primary-light: #47663B; /* Lighter Green */
-    --color-accent: #E8ECD7; /* Earthy Accent */
-    --color-accent-hover: #EED3B1; /* Warm Accent */
-    --color-bg: #FAFAF8; /* Off white background */
-    --color-text: #2D312E; /* Dark slate for readable text */
-    --color-text-light: #6E7470; 
+    /* Colors — SKILL.md: Zinc base, single desaturated accent */
+    --color-primary: #1a3d27;        /* Deep Forest — off-black green */
+    --color-primary-light: #2e5c3a;  /* Lighter Forest */
+    --color-accent: #d4e4bc;         /* Muted sage — desaturated */
+    --color-accent-warm: #c8a97e;    /* Warm amber */
+    --color-highlight: #e8622a;      /* Single accent — desaturated orange */
+    --color-bg: #f6f6f3;             /* Off-white Zinc-cool */
+    --color-surface: #ffffff;
+    --color-text: #1c2119;           /* Off-black — never pure #000 */
+    --color-text-light: #657063;     /* Muted green-gray */
     --color-white: #FFFFFF;
-    
-    /* Typography */
+
+    /* Typography — SKILL.md: NO Inter, use Outfit */
     --font-heading: 'Outfit', sans-serif;
-    --font-body: 'Inter', sans-serif;
-    
+    --font-body: 'Outfit', sans-serif;
+
     /* Layout */
-    --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    --border-radius: 6px;
-    --box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    --transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1); /* expo-out */
+    --border-radius: 8px;
+    --border-radius-lg: 16px;
+    /* SKILL.md: shadow tinted to background hue */
+    --box-shadow: 0 8px 24px rgba(26, 61, 39, 0.08);
+    --box-shadow-lg: 0 20px 48px rgba(26, 61, 39, 0.12);
 }
 
 * {
@@ -85,10 +92,17 @@ img {
     padding: 0.8rem 1.8rem;
     font-family: var(--font-heading);
     font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
     border-radius: 50px;
     cursor: pointer;
     transition: var(--transition);
     border: 2px solid transparent;
+}
+
+/* SKILL.md Rule 5: Tactile active feedback */
+.btn:active {
+    transform: translateY(0) scale(0.98) !important;
 }
 
 .btn-primary {
@@ -99,7 +113,8 @@ img {
 .btn-primary:hover {
     background-color: var(--color-primary-light);
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(31, 69, 41, 0.3);
+    /* SKILL.md: NO neon glow — use tinted shadow */
+    box-shadow: 0 6px 18px rgba(26, 61, 39, 0.25);
 }
 
 .btn-outline {
@@ -111,19 +126,21 @@ img {
 .btn-outline:hover {
     background-color: var(--color-primary);
     color: var(--color-white);
+    box-shadow: 0 4px 14px rgba(26, 61, 39, 0.2);
 }
 
 .btn-hero {
     background-color: var(--color-accent);
     color: var(--color-primary);
-    font-size: 1.1rem;
+    font-size: 1.05rem;
+    font-weight: 700;
     padding: 1rem 2.5rem;
 }
 
 .btn-hero:hover {
     background-color: var(--color-white);
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
 }
 
 /* =========================================
@@ -137,8 +154,7 @@ img {
     z-index: 1000;
     padding: 1rem 0;
     transition: var(--transition);
-    background: #003F3B;
-    /* background: var(--color-primary); */
+    background: var(--color-primary);
 }
 
 .header .container {
@@ -221,7 +237,7 @@ img {
 }
 
 .nav-links a:not(.btn, .nav-phone):hover {
-    color: #f15b22;
+    color: var(--color-highlight);
 }
 
 .nav-right {
@@ -295,8 +311,8 @@ img {
 ========================================= */
 .hero {
     position: relative;
-    height: 100vh;
-    min-height: 600px;
+    /* SKILL.md: NEVER use h-screen, use min-height: 100dvh */
+    min-height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -312,7 +328,8 @@ img {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(31,69,41,0.4) 100%);
+    /* SKILL.md: forest-tinted overlay instead of pure black */
+    background: linear-gradient(to bottom, rgba(10, 30, 16, 0.55) 0%, rgba(26, 61, 39, 0.65) 100%);
 }
 
 .hero-content {
@@ -393,9 +410,10 @@ img {
     bottom: -15px;
     left: 50%;
     transform: translateX(-50%);
-    width: 60px;
+    width: 48px;
     height: 3px;
-    background-color: var(--color-primary-light);
+    /* SKILL.md: use accent highlight for visual pop */
+    background-color: var(--color-highlight);
     border-radius: 2px;
 }
 
@@ -429,8 +447,8 @@ img {
 }
 
 .tour-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+    transform: translateY(-8px);
+    box-shadow: var(--box-shadow-lg);
 }
 
 .tour-image {
@@ -443,7 +461,7 @@ img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tour-card:hover .tour-image img {
@@ -458,14 +476,15 @@ img {
     color: var(--color-white);
     padding: 0.4rem 1rem;
     border-radius: 50px;
-    font-size: 0.8rem;
-    font-weight: 600;
+    font-size: 0.78rem;
+    font-weight: 700;
     text-transform: uppercase;
     font-family: var(--font-heading);
+    letter-spacing: 0.5px;
 }
 
 .tour-badge.new {
-    background: #E65C4F;
+    background: var(--color-highlight);
 }
 
 .tour-info {
@@ -519,9 +538,13 @@ img {
 }
 
 .feature-card {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    /* SKILL.md Liquid Glass: beyond blur — add inner border + inset shadow */
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    /* Simulate physical edge refraction */
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
     padding: 2.5rem 2rem;
     border-radius: var(--border-radius);
     text-align: center;
@@ -529,8 +552,9 @@ img {
 }
 
 .feature-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-4px);
     background: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 12px 32px rgba(0,0,0,0.15);
 }
 
 .feature-icon {
@@ -566,7 +590,7 @@ img {
    FOOTER
 ========================================= */
 .footer {
-    background-color: #1A1C1A;
+    background-color: #111814;
     color: var(--color-white);
     padding: 5rem 0 2rem;
 }
@@ -623,9 +647,10 @@ img {
     position: absolute;
     bottom: 0;
     left: 0;
-    width: 30px;
+    width: 28px;
     height: 2px;
-    background: var(--color-primary-light);
+    /* SKILL.md: accent highlight on footer titles */
+    background: var(--color-highlight);
 }
 
 .footer-col ul {
@@ -642,7 +667,7 @@ img {
 
 .footer-col ul a:hover {
     color: var(--color-accent);
-    padding-left: 5px;
+    padding-left: 6px;
 }
 
 .contact-info li {
@@ -819,8 +844,8 @@ img {
 }
 
 .nav-mobile-overlay a:not(.btn, .nav-phone):hover {
-    color: #f15b22;
-    background: #fafafa;
+    color: var(--color-highlight);
+    background: #f8f7f4;
 }
 
 /* ChevronDown xoay thành > (phải) khi đóng */
@@ -881,7 +906,7 @@ img {
 }
 
 .nav-mobile-overlay .mega-links a:hover {
-    color: #f15b22;
+    color: var(--color-highlight);
 }
 
 .nav-mobile-overlay .mega-image,
@@ -1011,8 +1036,8 @@ img {
 }
 
 .mega-menu .mega-links a:hover {
-    color: #f15b22;
-    transform: translateX(5px);
+    color: var(--color-highlight);
+    transform: translateX(4px);
 }
 
 /* Column 2: Line Art Image */
@@ -1036,8 +1061,8 @@ img {
 }
 
 .mega-desc-accent {
-    color: #ff6b00; /* Màu cam Toong */
-    font-size: 1.8rem;
+    color: var(--color-highlight);
+    font-size: 1.7rem;
     font-weight: 800;
     margin: 0 0 0.2rem 0;
 }
@@ -1120,9 +1145,11 @@ img {
     padding: 10rem 0 5rem;
     text-align: center;
     color: var(--color-white);
+    /* Subtle gradient for depth */
+    background-image: linear-gradient(135deg, var(--color-primary) 0%, #0f2a18 100%);
 }
 .page-title { color: var(--color-white); font-size: 3rem; margin-bottom: 1rem; }
-.page-subtitle { color: var(--color-accent); font-size: 1.2rem; }
+.page-subtitle { color: var(--color-accent); font-size: 1.15rem; letter-spacing: 0.5px; }
 
 /* Filter Bar */
 .filter-section {
@@ -1131,7 +1158,7 @@ img {
     z-index: 10;
 }
 .filter-bar {
-    background: var(--color-white);
+    background: var(--color-surface);
     padding: 1.5rem 2rem;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
@@ -1139,6 +1166,7 @@ img {
     flex-wrap: wrap;
     gap: 1.5rem;
     align-items: flex-end;
+    border: 1px solid #e8e5de;
 }
 .filter-group { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 0.5rem; }
 .filter-group label { font-size: 0.9rem; color: var(--color-text-light); font-weight: 600; }
@@ -1163,7 +1191,7 @@ img {
 /* Tour Content Tweaks */
 .pt-0 { padding-top: 0 !important; }
 .tour-price-row { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 1rem; margin-top: 1rem; }
-.tour-price-row .price { font-size: 1.25rem; font-weight: 700; color: #E65C4F; }
+.tour-price-row .price { font-size: 1.25rem; font-weight: 700; color: var(--color-highlight); }
 
 /* Tour Detail */
 .detail-hero {
@@ -1317,7 +1345,7 @@ img {
   line-height: 1.1;
 }
 .booking-price .unit { color: var(--color-text-light); font-size: 0.9rem; }
-.booking-divider { border: none; border-top: 1px solid #e5e1d8; margin: 1.2rem 0; }
+.booking-divider { border: none; border-top: 1px solid #e8e5de; margin: 1.2rem 0; }
 .booking-section-title {
   font-size: 0.8rem;
   font-weight: 700;
@@ -1373,30 +1401,41 @@ img {
   width: 100%;
   padding: 0 40px;
 }
-.departure-carousel {
-  display: flex;
-  gap: 1.5rem;
-  overflow-x: auto;
-  scroll-behavior: smooth;
+
+.departure-carousel-viewport {
+  overflow: hidden;
+  width: 100%;
+  position: relative;
   padding: 1rem 0 2rem;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }
-.departure-carousel::-webkit-scrollbar { display: none; }
+
+.departure-carousel-slider {
+  display: flex;
+  gap: 2rem;
+  will-change: transform;
+}
+
+/* flex-basis driven by JS via --dc-count CSS variable on the slider */
+.departure-card-flex {
+  flex: 0 0 calc((100% - (var(--dc-count, 3) - 1) * 2rem) / var(--dc-count, 3));
+  min-width: 0;
+}
+
+
 
 .departure-card {
-  flex: 0 0 300px;
-  background: #fdfaf3;
+  background: #f9f8f4;
   border-radius: 12px;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-  border: 1px solid #e5e1d8;
-  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px rgba(26,61,39,0.06);
+  border: 1px solid #e8e4db;
+  transition: var(--transition);
+  width: 100%;
 }
-.departure-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+.departure-card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(26,61,39,0.1); }
 
 .d-date {
   display: flex;
@@ -1435,7 +1474,7 @@ img {
   transition: all 0.3s ease;
   color: var(--color-primary);
 }
-.carousel-nav:hover { background: var(--color-primary); color: var(--color-white); border-color: var(--color-primary); }
+.carousel-nav:hover { background: var(--color-primary); color: var(--color-white); border-color: var(--color-primary); box-shadow: 0 4px 12px rgba(26,61,39,0.2); }
 .carousel-nav.prev { left: -10px; }
 .carousel-nav.next { right: -10px; }
 .departure-share {
@@ -1479,9 +1518,9 @@ img {
 .level-image img { width: 100%; height: 100%; object-fit: cover; }
 .level-content { flex: 1; padding: 3.5rem; display: flex; flex-direction: column; align-items: flex-start; }
 .level-badge { font-family: var(--font-heading); font-weight: 600; padding: 0.4rem 1.2rem; border-radius: 50px; margin-bottom: 1.5rem; font-size: 0.9rem; text-transform: uppercase; color: var(--color-white); }
-.badge-green { background: #38b26b; }
-.badge-blue { background: #2980b9; }
-.badge-red { background: #e74c3c; }
+.badge-green { background: #2d9458; }
+.badge-blue { background: #2472a4; }
+.badge-red { background: #c94437; }
 .level-title { font-size: 2.2rem; margin-bottom: 0.5rem; font-family: var(--font-heading); }
 .level-score { color: var(--color-text-light); font-size: 1.1rem; margin-bottom: 1.5rem; }
 .level-desc { color: var(--color-text-light); margin-bottom: 2rem; font-size: 1.05rem; line-height: 1.7; }
@@ -1498,26 +1537,27 @@ img {
 /* =========================================
    ADVENTURE PASS STYLES
 ========================================= */
-.pass-hero { background-image: url('https://images.unsplash.com/photo-1516939884455-1445c8652f83?auto=format&fit=crop&w=2000&q=80'); min-height: 80vh; }
-.pass-hero-title { font-size: 5rem; font-family: 'Outfit', sans-serif; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; line-height: 1; margin-bottom: 0; }
-.text-orange { color: #f15b22 !important; }
+.pass-hero { background-image: url('https://images.unsplash.com/photo-1516939884455-1445c8652f83?auto=format&fit=crop&w=2000&q=80'); min-height: 100dvh; }
+.pass-hero-title { font-size: clamp(2.8rem, 6vw, 4.5rem); font-family: 'Outfit', sans-serif; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; line-height: 1; margin-bottom: 0; }
+.text-orange { color: var(--color-highlight) !important; }
 .pass-intro { padding-top: 5rem; padding-bottom: 3rem; }
-.pass-intro-title { font-size: 2.8rem; margin-bottom: 2rem; color: #044b3c; font-weight: 800; }
+.pass-intro-title { font-size: 2.8rem; margin-bottom: 2rem; color: var(--color-primary); font-weight: 800; }
 .pass-intro-text { max-width: 800px; margin: 0 auto 4rem; font-size: 1.1rem; color: var(--color-text-light); }
-.pass-intro-list { text-align: left; list-style: disc; padding-left: 2rem; margin: 1.5rem 0; color: #044b3c; font-weight: 600; }
-.bg-grey { background-color: #f5f5f5; padding: 4rem 0; }
-.concept-item h3 { font-size: 1.5rem; margin-top: 1.5rem; color: #044b3c; }
+.pass-intro-list { text-align: left; list-style: disc; padding-left: 2rem; margin: 1.5rem 0; color: var(--color-primary); font-weight: 600; }
+.bg-grey { background-color: #f2f0eb; padding: 4rem 0; }
+.concept-item h3 { font-size: 1.5rem; margin-top: 1.5rem; color: var(--color-primary); }
 
 /* Pass Cards */
 .pass-cards { background-image: url('https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=2000&q=80'); background-size: cover; background-attachment: fixed; position: relative; padding: 6rem 0; }
 .pass-cards::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.1); }
 .pass-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; position: relative; z-index: 10; max-width: 1100px; margin: 0 auto; }
-.pass-card { background: var(--color-white); border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.3s ease; box-shadow: 0 15px 35px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); }
-.pass-card:hover { transform: translateY(-10px); }
-.pass-card-header { padding: 3rem 2rem; text-align: center; color: var(--color-white); position: relative; }
-.bg-dark-green { background-color: #044b3c !important; }
-.bg-orange { background-color: #f15b22 !important; }
-.bg-black { background-color: #1a1a1a !important; }
+.pass-card { background: var(--color-surface); border-radius: var(--border-radius-lg); overflow: hidden; display: flex; flex-direction: column; transition: transform 0.35s cubic-bezier(0.16,1,0.3,1); box-shadow: 0 15px 40px rgba(26,61,39,0.15); border: 1px solid rgba(255,255,255,0.08); }
+.pass-card:hover { transform: translateY(-8px); }
+.pass-card-header { padding: 3rem 2rem; text-align: center; color: var(--color-white); position: relative; overflow: hidden; }
+.bg-dark-green { background-color: var(--color-primary) !important; }
+.bg-orange { background-color: var(--color-highlight) !important; }
+/* SKILL.md: NO pure black — use off-black */
+.bg-black { background-color: #0f1210 !important; }
 .pass-logo { height: 40px; margin: 0 auto 1.5rem; opacity: 0.8; }
 .pass-card-header h3 { color: var(--color-white); font-size: 2.5rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 0.5rem; line-height: 1; }
 .pass-card-header em { font-style: italic; font-weight: 400; font-family: 'Inter', sans-serif; font-size: 1.5rem; letter-spacing: 0; }
@@ -1525,16 +1565,16 @@ img {
 .signature-badge { position: absolute; top: 15px; right: -30px; background: #c0392b; color: #fff; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 5px 30px; transform: rotate(45deg); letter-spacing: 1px; }
 
 .pass-card-body { padding: 2.5rem 2rem; flex-grow: 1; display: flex; flex-direction: column; }
-.pass-price { font-size: 1.8rem; font-family: var(--font-heading); font-weight: 800; color: #044b3c; text-align: center; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid #eee; }
+.pass-price { font-size: 1.8rem; font-family: var(--font-heading); font-weight: 800; color: var(--color-primary); text-align: center; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid #e8e5de; }
 .pass-features { margin-bottom: 2.5rem; flex-grow: 1; text-align: left;}
 .pass-features li { margin-bottom: 1rem; padding-left: 1.5rem; position: relative; font-size: 0.95rem; color: var(--color-text); }
-.pass-features li::before { content: '✓'; position: absolute; left: 0; color: #f15b22; font-weight: bold; }
-.pass-btn { background-color: #044b3c; color: var(--color-white); border-radius: 8px; padding: 1rem; font-size: 1.1rem; border: none; font-weight: 600; cursor: pointer;}
-.pass-btn:hover { background-color: #f15b22; color: #fff;}
+.pass-features li::before { content: '\2713'; position: absolute; left: 0; color: var(--color-highlight); font-weight: bold; }
+.pass-btn { background-color: var(--color-primary); color: var(--color-white); border-radius: var(--border-radius); padding: 1rem; font-size: 1rem; border: none; font-weight: 600; cursor: pointer; transition: var(--transition); }
+.pass-btn:hover { background-color: var(--color-highlight); color: #fff; transform: translateY(-1px); }
 
 /* Slogan */
 .pass-slogan { padding: 6rem 0; }
-.pass-slogan h2 { font-size: 3.5rem; line-height: 1.3; color: #044b3c; font-family: var(--font-heading); font-weight: 800; }
+.pass-slogan h2 { font-size: 3.5rem; line-height: 1.3; color: var(--color-primary); font-family: var(--font-heading); font-weight: 800; }
 
 @media (max-width: 768px) {
     .pass-hero-title { font-size: 3rem; }
@@ -1562,10 +1602,10 @@ img {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  animation: bmSlideIn 0.3s ease;
+  animation: bmSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes bmSlideIn {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 .bm-topbar {
@@ -2051,8 +2091,8 @@ img {
 .similar-tours-section {
   margin-top: 4rem;
   padding: 4rem 0 2rem;
-  border-top: 1px solid #eee;
-  background: #f4f2ed;
+  border-top: 1px solid #e8e5de;
+  background: #f2f0eb;
   margin-left: calc(-50vw + 50%);
   margin-right: calc(-50vw + 50%);
   padding-left: calc(50vw - 50%);
@@ -2097,8 +2137,8 @@ img {
 }
 
 .similar-tour-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 32px rgba(26,61,39,0.1);
 }
 
 .similar-tour-img-wrap {
@@ -2332,7 +2372,8 @@ img {
 }
 
 .td-hero .hero-overlay {
-  background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.7) 100%);
+  /* Forest-tinted bottom gradient for depth */
+  background: linear-gradient(to bottom, rgba(10, 30, 16, 0.2) 0%, rgba(26, 61, 39, 0.72) 100%);
 }
 
 .td-hero-content {
@@ -2528,11 +2569,11 @@ img {
 .td-sticky-card {
   position: sticky;
   top: 120px;
-  background: var(--color-white);
+  background: var(--color-surface);
   padding: 2.5rem;
-  border-radius: 20px;
-  box-shadow: 0 15px 50px rgba(0,0,0,0.08);
-  border-top: 6px solid var(--color-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--box-shadow-lg);
+  border-top: 5px solid var(--color-primary);
 }
 
 .td-price-tag {

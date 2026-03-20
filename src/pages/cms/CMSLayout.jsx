@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useAuth } from '../../context/AuthContext'
 import {
   Layout, Menu, Button, ConfigProvider, Avatar, Dropdown, Badge, Breadcrumb, Typography,
-  Popover, List, Tooltip
-} from 'antd';
-import vi_VN from 'antd/locale/vi_VN';
+  Popover, List, Tooltip, Drawer, Spin, Empty
+} from 'antd'
+import vi_VN from 'antd/locale/vi_VN'
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -27,11 +27,24 @@ import {
   MailOutlined,
   ShoppingOutlined,
   CrownOutlined,
-} from '@ant-design/icons';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+  SettingOutlined,
+} from '@ant-design/icons'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { adminApi } from '../../api/api'
 
-const { Header, Sider, Content } = Layout;
-const { Text } = Typography;
+const { Header, Sider, Content } = Layout
+const { Text } = Typography
+
+// ─── breakpoint hook ───────────────────────────────────────────────────────────
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  return isMobile
+}
 
 const ROUTE_LABELS = {
   '/cms': 'Dashboard',
@@ -45,37 +58,141 @@ const ROUTE_LABELS = {
   '/cms/contacts': 'Hộp thư liên hệ',
   '/cms/staff': 'Nhân viên',
   '/cms/profile': 'Hồ sơ cá nhân',
-};
+  '/cms/notification-configs': 'Cấu hình thông báo',
+}
 
-const INITIAL_NOTIFICATIONS = [
-  { id: 1, type: 'booking',  icon: <CalendarFilled style={{ color: '#1677ff' }} />, title: 'Booking mới BK-10296', desc: 'Nguyễn Văn A đặt tour Tà Năng 2 người', time: '5 phút trước', read: false },
-  { id: 2, type: 'contact',  icon: <MessageFilled  style={{ color: '#52c41a' }} />, title: 'Liên hệ tư vấn mới', desc: 'Trần Thị B hỏi về tour Bidoup cuối tuần',  time: '1 giờ trước',  read: false },
-  { id: 3, type: 'pass',    icon: <CrownFilled    style={{ color: '#d48806' }} />, title: 'Kích hoạt Adventure Pass', desc: 'Lê Cường vừa mua gói ADVENTURE Pass',   time: '2 giờ trước',  read: false },
-  { id: 4, type: 'booking',  icon: <CalendarFilled style={{ color: '#1677ff' }} />, title: 'Booking BK-10295 cọc xong', desc: 'Phạm Hữu Cường đã chuyển khoản cọc',  time: '5 giờ trước',  read: true  },
-];
+const getRouteLabel = (pathname) => {
+  if (ROUTE_LABELS[pathname]) return ROUTE_LABELS[pathname]
+  if (/\/cms\/tours\/\d+\/faqs/.test(pathname)) return 'FAQ theo Tour'
+  return 'CMS'
+}
+
+// ─── helpers ───────────────────────────────────────────────────────────────────
+const NOTIF_ICON = {
+  booking: <CalendarFilled style={{ color: '#1677ff' }} />,
+  contact: <MessageFilled  style={{ color: '#52c41a' }} />,
+  pass:    <CrownFilled    style={{ color: '#d48806' }} />,
+}
+
+const timeAgo = (dateStr) => {
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000)
+  if (diff < 60)  return `${diff} giây trước`
+  if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`
+  if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`
+  return `${Math.floor(diff / 86400)} ngày trước`
+}
+
+// ─── Sidebar menu content (shared between Sider & Drawer) ─────────────────────
+const SidebarContent = ({ collapsed, location, menuItems, handleMenuClick, navigate, onMenuSelect }) => (
+  <>
+    {/* Logo area */}
+    <div
+      style={{
+        height: 64,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: collapsed ? 'center' : 'flex-start',
+        padding: collapsed ? '0' : '0 20px',
+        gap: 10,
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        transition: 'all 0.2s',
+        cursor: 'pointer',
+        flexShrink: 0,
+      }}
+      onClick={() => { navigate('/cms'); onMenuSelect?.() }}
+    >
+      <div style={{
+        width: 32, height: 32,
+        background: 'linear-gradient(135deg, #1F4529 0%, #47663B 100%)',
+        borderRadius: 8,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <EnvironmentOutlined style={{ color: '#E8ECD7', fontSize: 16 }} />
+      </div>
+      {!collapsed && (
+        <div style={{ overflow: 'hidden' }}>
+          <div style={{ color: '#fff', fontWeight: 700, fontSize: 15, lineHeight: 1.2, whiteSpace: 'nowrap' }}>
+            TOONG
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, letterSpacing: 2, whiteSpace: 'nowrap' }}>
+            CMS PORTAL
+          </div>
+        </div>
+      )}
+    </div>
+
+    {/* Navigation menu */}
+    <Menu
+      theme="dark"
+      mode="inline"
+      selectedKeys={[location.pathname]}
+      defaultOpenKeys={(() => {
+        const path = location.pathname
+        if (['/cms/tours', '/cms/bookings', '/cms/passes', '/cms/pass-orders'].includes(path)
+          || /\/cms\/tours\/\d+\/faqs/.test(path)) return ['business']
+        if (['/cms/banners', '/cms/blogs', '/cms/faqs', '/cms/contacts'].includes(path)) return ['content']
+        if (['/cms/staff', '/cms/profile'].includes(path)) return ['system']
+        return []
+      })()}
+      items={menuItems}
+      onClick={(e) => { handleMenuClick(e); onMenuSelect?.() }}
+      style={{ background: 'transparent', border: 'none', marginTop: 8, flex: 1, overflowY: 'auto' }}
+    />
+  </>
+)
 
 const CMSLayout = () => {
-  const { user, logout } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
-  const [bellOpen, setBellOpen] = useState(false);
+  const { user, logout } = useAuth()
+  const [collapsed, setCollapsed] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [notifications, setNotifications] = useState([])
+  const [notifLoading, setNotifLoading] = useState(false)
+  const [bellOpen, setBellOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const isMobile = useIsMobile()
+  const pollRef = useRef(null)
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await adminApi.getNotifications({ limit: 20 })
+      const data = res.data?.data ?? []
+      setNotifications(data)
+      setUnreadCount(res.data?.unreadCount ?? data.filter(n => !n.isRead).length)
+    } catch {
+      // silent fail — avoid crashing UI
+    }
+  }, [])
 
-  const markAsRead = (id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  const navigate = useNavigate();
-  const location = useLocation();
+  useEffect(() => {
+    setNotifLoading(true)
+    fetchNotifications().finally(() => setNotifLoading(false))
+    pollRef.current = setInterval(fetchNotifications, 60_000)
+    return () => clearInterval(pollRef.current)
+  }, [fetchNotifications])
 
-  const currentLabel = ROUTE_LABELS[location.pathname] || 'CMS';
+  const markAsRead = async (id) => {
+    try {
+      await adminApi.markNotificationRead(id)
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n))
+      setUnreadCount(prev => Math.max(0, prev - 1))
+    } catch { /* silent */ }
+  }
 
-  const getDefaultOpenKeys = () => {
-    const path = location.pathname;
-    if (['/cms/tours', '/cms/bookings', '/cms/passes', '/cms/pass-orders'].includes(path)) return ['business'];
-    if (['/cms/banners', '/cms/blogs', '/cms/faqs', '/cms/contacts'].includes(path)) return ['content'];
-    if (['/cms/staff', '/cms/profile'].includes(path)) return ['system'];
-    return [];
-  };
+  const markAllRead = async () => {
+    try {
+      await adminApi.markAllNotificationsRead()
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+      setUnreadCount(0)
+    } catch { /* silent */ }
+  }
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const currentLabel = getRouteLabel(location.pathname)
+
+  // Close drawer on route change (mobile)
+  useEffect(() => { setDrawerOpen(false) }, [location.pathname])
 
   const menuItems = [
     {
@@ -111,19 +228,103 @@ const CMSLayout = () => {
       icon: <TeamOutlined />,
       children: [
         { key: '/cms/staff', icon: <UserOutlined />, label: 'Nhân viên' },
+        { key: '/cms/notification-configs', icon: <SettingOutlined />, label: 'Cấu hình thông báo' },
       ],
     },
-  ];
+  ]
 
   const userMenuItems = [
     { key: 'profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân' },
     { type: 'divider' },
     { key: 'logout', icon: <LogoutOutlined />, label: 'Đăng xuất', danger: true },
-  ];
+  ]
 
-  const handleMenuClick = ({ key }) => {
-    navigate(key);
-  };
+  const handleMenuClick = ({ key }) => { navigate(key) }
+
+  const notificationPopoverContent = (
+    <div style={{ width: isMobile ? 300 : 340 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #f0f0f0' }}>
+        <span style={{ fontWeight: 600, fontSize: 14 }}>Thông báo</span>
+        {unreadCount > 0 && (
+          <Button type="link" size="small" style={{ padding: 0, fontSize: 12 }} onClick={markAllRead}>
+            Đánh dấu đã đọc hết
+          </Button>
+        )}
+      </div>
+
+      {notifLoading ? (
+        <div style={{ textAlign: 'center', padding: '24px 0' }}>
+          <Spin size="small" />
+        </div>
+      ) : notifications.length === 0 ? (
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description="Không có thông báo mới"
+          style={{ padding: '24px 16px', margin: 0 }}
+        />
+      ) : (
+        <List
+          dataSource={notifications}
+          style={{ maxHeight: 320, overflowY: 'auto' }}
+          renderItem={(item) => (
+            <List.Item
+              key={item.id}
+              style={{
+                padding: '10px 16px',
+                cursor: 'pointer',
+                background: item.isRead ? '#fff' : '#f0f7ff',
+                borderBottom: '1px solid #fafafa',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = item.isRead ? '#fafafa' : '#e6f4ff'}
+              onMouseLeave={e => e.currentTarget.style.background = item.isRead ? '#fff' : '#f0f7ff'}
+              onClick={() => markAsRead(item.id)}
+              actions={[
+                !item.isRead && (
+                  <Tooltip title="Đánh dấu đã đọc" key="read">
+                    <Button
+                      type="text" size="small"
+                      icon={<CheckOutlined style={{ fontSize: 11 }} />}
+                      onClick={(e) => { e.stopPropagation(); markAsRead(item.id) }}
+                      style={{ color: '#1677ff', padding: '0 4px' }}
+                    />
+                  </Tooltip>
+                ),
+              ].filter(Boolean)}
+            >
+              <List.Item.Meta
+                avatar={
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+                    background: item.isRead ? '#f5f5f5' : '#e6f4ff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
+                  }}>
+                    {NOTIF_ICON[item.type] ?? <BellOutlined />}
+                  </div>
+                }
+                title={<span style={{ fontSize: 13, fontWeight: item.isRead ? 400 : 600, color: '#1a1a1a' }}>{item.title}</span>}
+                description={
+                  <span style={{ fontSize: 11, color: '#999' }}>
+                    <span style={{ display: 'block', color: '#666', marginBottom: 1 }}>{item.description}</span>
+                    {timeAgo(item.createdAt)}
+                  </span>
+                }
+              />
+            </List.Item>
+          )}
+        />
+      )}
+
+      <div style={{ textAlign: 'center', padding: '10px', borderTop: '1px solid #f0f0f0' }}>
+        <Button
+          type="link" size="small" style={{ fontSize: 12 }}
+          onClick={() => { setBellOpen(false); navigate('/cms/notification-configs') }}
+        >
+          Cấu hình thông báo
+        </Button>
+      </div>
+    </div>
+  )
 
   return (
     <ConfigProvider
@@ -154,80 +355,69 @@ const CMSLayout = () => {
       }}
     >
       <Layout style={{ minHeight: '100vh' }}>
-        {/* ── SIDEBAR ── */}
-        <Sider
-          trigger={null}
-          collapsible
-          collapsed={collapsed}
-          width={220}
-          style={{ background: '#0D2E2A', overflow: 'hidden' }}
-        >
-          {/* Logo area */}
-          <div style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: collapsed ? '0' : '0 20px',
-            gap: 10,
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-            transition: 'all 0.2s',
-            cursor: 'pointer',
-          }} onClick={() => navigate('/cms')}>
-            <div style={{
-              width: 32, height: 32,
-              background: 'linear-gradient(135deg, #1F4529 0%, #47663B 100%)',
-              borderRadius: 8,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <EnvironmentOutlined style={{ color: '#E8ECD7', fontSize: 16 }} />
-            </div>
-            {!collapsed && (
-              <div style={{ overflow: 'hidden' }}>
-                <div style={{ color: '#fff', fontWeight: 700, fontSize: 15, lineHeight: 1.2, whiteSpace: 'nowrap' }}>
-                  TOONG
-                </div>
-                <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, letterSpacing: 2, whiteSpace: 'nowrap' }}>
-                  CMS PORTAL
-                </div>
+
+        {/* ── SIDEBAR (desktop only) ── */}
+        {!isMobile && (
+          <Sider
+            trigger={null}
+            collapsible
+            collapsed={collapsed}
+            width={220}
+            style={{ background: '#0D2E2A', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <SidebarContent
+                collapsed={collapsed}
+                location={location}
+                menuItems={menuItems}
+                handleMenuClick={handleMenuClick}
+                navigate={navigate}
+              />
+              {/* Collapse toggle */}
+              <div style={{
+                borderTop: '1px solid rgba(255,255,255,0.08)',
+                padding: '12px',
+                display: 'flex',
+                justifyContent: collapsed ? 'center' : 'flex-end',
+              }}>
+                <Button
+                  type="text"
+                  icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                  onClick={() => setCollapsed(!collapsed)}
+                  style={{ color: 'rgba(255,255,255,0.5)', fontSize: 16 }}
+                />
               </div>
-            )}
-          </div>
+            </div>
+          </Sider>
+        )}
 
-          {/* Navigation menu */}
-          <Menu
-            theme="dark"
-            mode="inline"
-            selectedKeys={[location.pathname]}
-            defaultOpenKeys={getDefaultOpenKeys()}
-            items={menuItems}
-            onClick={handleMenuClick}
-            style={{ background: 'transparent', border: 'none', marginTop: 8 }}
-          />
-
-          {/* Collapse toggle at the bottom */}
-          <div style={{
-            position: 'absolute',
-            bottom: 0, left: 0, right: 0,
-            borderTop: '1px solid rgba(255,255,255,0.08)',
-            padding: '12px',
-            display: 'flex',
-            justifyContent: collapsed ? 'center' : 'flex-end',
-          }}>
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
-              style={{ color: 'rgba(255,255,255,0.5)', fontSize: 16 }}
+        {/* ── SIDEBAR (mobile drawer) ── */}
+        {isMobile && (
+          <Drawer
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            placement="left"
+            width={240}
+            styles={{
+              body: { padding: 0, background: '#0D2E2A', display: 'flex', flexDirection: 'column', height: '100%' },
+              header: { display: 'none' },
+            }}
+          >
+            <SidebarContent
+              collapsed={false}
+              location={location}
+              menuItems={menuItems}
+              handleMenuClick={handleMenuClick}
+              navigate={navigate}
+              onMenuSelect={() => setDrawerOpen(false)}
             />
-          </div>
-        </Sider>
+          </Drawer>
+        )}
 
         <Layout>
           {/* ── HEADER ── */}
           <Header style={{
-            padding: '0 24px',
+            padding: isMobile ? '0 12px' : '0 24px',
             background: '#fff',
             display: 'flex',
             alignItems: 'center',
@@ -237,18 +427,29 @@ const CMSLayout = () => {
             top: 0,
             zIndex: 100,
             height: 56,
+            gap: 8,
           }}>
-            {/* Left: Breadcrumb */}
-            <Breadcrumb
-              items={[
-                { title: 'Toong CMS' },
-                { title: currentLabel },
-              ]}
-              style={{ fontSize: 13 }}
-            />
+            {/* Left: Hamburger (mobile) or Breadcrumb (desktop) */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+              {isMobile ? (
+                <Button
+                  type="text"
+                  icon={<MenuUnfoldOutlined style={{ fontSize: 18 }} />}
+                  onClick={() => setDrawerOpen(true)}
+                  style={{ flexShrink: 0 }}
+                />
+              ) : null}
+              <Breadcrumb
+                items={[
+                  { title: isMobile ? 'CMS' : 'Toong CMS' },
+                  { title: currentLabel },
+                ]}
+                style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+              />
+            </div>
 
-            {/* Right: User controls */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Right: Bell + User */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 4 : 8, flexShrink: 0 }}>
               <Popover
                 open={bellOpen}
                 onOpenChange={setBellOpen}
@@ -256,78 +457,7 @@ const CMSLayout = () => {
                 trigger="click"
                 arrow={false}
                 styles={{ body: { padding: 0 } }}
-                content={
-                  <div style={{ width: 340 }}>
-                    {/* Header */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #f0f0f0' }}>
-                      <span style={{ fontWeight: 600, fontSize: 14 }}>Thông báo</span>
-                      {unreadCount > 0 && (
-                        <Button type="link" size="small" style={{ padding: 0, fontSize: 12 }} onClick={markAllRead}>
-                          Đánh dấu đã đọc hết
-                        </Button>
-                      )}
-                    </div>
-                    {/* List */}
-                    <List
-                      dataSource={notifications}
-                      style={{ maxHeight: 340, overflowY: 'auto' }}
-                      renderItem={(item) => (
-                        <List.Item
-                          key={item.id}
-                          style={{
-                            padding: '10px 16px',
-                            cursor: 'pointer',
-                            background: item.read ? '#fff' : '#f0f7ff',
-                            borderBottom: '1px solid #fafafa',
-                            transition: 'background 0.15s',
-                          }}
-                          onMouseEnter={e => e.currentTarget.style.background = item.read ? '#fafafa' : '#e6f4ff'}
-                          onMouseLeave={e => e.currentTarget.style.background = item.read ? '#fff' : '#f0f7ff'}
-                          onClick={() => markAsRead(item.id)}
-                          actions={[
-                            !item.read && (
-                              <Tooltip title="Đánh dấu đã đọc" key="read">
-                                <Button
-                                  type="text" size="small"
-                                  icon={<CheckOutlined style={{ fontSize: 11 }} />}
-                                  onClick={(e) => { e.stopPropagation(); markAsRead(item.id); }}
-                                  style={{ color: '#1677ff', padding: '0 4px' }}
-                                />
-                              </Tooltip>
-                            ),
-                          ].filter(Boolean)}
-                        >
-                          <List.Item.Meta
-                            avatar={
-                              <div style={{
-                                width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-                                background: item.read ? '#f5f5f5' : '#e6f4ff',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
-                              }}>
-                                {item.icon}
-                              </div>
-                            }
-                            title={
-                              <span style={{ fontSize: 13, fontWeight: item.read ? 400 : 600, color: '#1a1a1a' }}>
-                                {item.title}
-                              </span>
-                            }
-                            description={
-                              <span style={{ fontSize: 11, color: '#999' }}>
-                                <span style={{ display: 'block', color: '#666', marginBottom: 1 }}>{item.desc}</span>
-                                {item.time}
-                              </span>
-                            }
-                          />
-                        </List.Item>
-                      )}
-                    />
-                    {/* Footer */}
-                    <div style={{ textAlign: 'center', padding: '10px', borderTop: '1px solid #f0f0f0' }}>
-                      <Button type="link" size="small" style={{ fontSize: 12 }}>Xem tất cả</Button>
-                    </div>
-                  </div>
-                }
+                content={notificationPopoverContent}
               >
                 <Badge count={unreadCount} size="small">
                   <Button
@@ -342,30 +472,30 @@ const CMSLayout = () => {
                 menu={{
                   items: userMenuItems,
                   onClick: ({ key }) => {
-                    if (key === 'logout') logout();
-                    if (key === 'profile') navigate('/cms/profile');
+                    if (key === 'logout') logout()
+                    if (key === 'profile') navigate('/cms/profile')
                   },
                 }}
                 placement="bottomRight"
                 arrow
               >
                 <div style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  cursor: 'pointer', padding: '4px 8px', borderRadius: 6,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  cursor: 'pointer', padding: '4px 6px', borderRadius: 6,
                   transition: 'background 0.2s',
                 }}
                   onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
                   <Avatar
-                    size={32}
-                    style={{ background: 'linear-gradient(135deg, #1F4529, #47663B)' }}
+                    size={30}
+                    style={{ background: 'linear-gradient(135deg, #1F4529, #47663B)', flexShrink: 0 }}
                     icon={<UserOutlined />}
                   />
-                  {!collapsed && (
+                  {!isMobile && (
                     <div style={{ lineHeight: 1.3 }}>
-                      <div style={{ fontWeight: 600, fontSize: 13, color: '#1a1a1a' }}>{user?.full_name || 'Admin'}</div>
-                      <div style={{ fontSize: 11, color: '#999' }}>{user?.role?.name || 'Quản trị viên'}</div>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: '#1a1a1a', whiteSpace: 'nowrap' }}>{user?.full_name || 'Admin'}</div>
+                      <div style={{ fontSize: 11, color: '#999', whiteSpace: 'nowrap' }}>{user?.role?.name || 'Quản trị viên'}</div>
                     </div>
                   )}
                 </div>
@@ -375,8 +505,8 @@ const CMSLayout = () => {
 
           {/* ── CONTENT ── */}
           <Content style={{
-            margin: '20px 20px',
-            padding: 24,
+            margin: isMobile ? '12px 8px' : '20px 20px',
+            padding: isMobile ? 14 : 24,
             minHeight: 280,
             background: '#fff',
             borderRadius: 8,
@@ -388,7 +518,7 @@ const CMSLayout = () => {
         </Layout>
       </Layout>
     </ConfigProvider>
-  );
-};
+  )
+}
 
-export default CMSLayout;
+export default CMSLayout

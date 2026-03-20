@@ -1,69 +1,105 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'
 import {
   Row, Col, Card, Avatar, Button, Typography, Descriptions, Divider,
-  Form, Input, message, Tag, Badge, Space, Tabs
-} from 'antd';
+  Form, Input, message, Tag, Badge, Space, Tabs, Spin,
+} from 'antd'
 import {
   UserOutlined, EditOutlined, LockOutlined, SaveOutlined, CloseOutlined,
-  MailOutlined, PhoneOutlined, IdcardOutlined, CheckCircleOutlined,
-} from '@ant-design/icons';
+  MailOutlined, IdcardOutlined, CheckCircleOutlined,
+} from '@ant-design/icons'
+import { adminApi } from '../../api/api'
 
-const { Title, Text } = Typography;
-
-const CURRENT_USER = {
-  id: 1,
-  name: 'Kiên Đỗ',
-  username: 'kien.admin',
-  email: 'kien@toong.vn',
-  phone: '0933227878',
-  role: 'admin',
-  roleLabel: 'Quản trị viên',
-  status: 'active',
-  last_login: new Date(Date.now() - 3600000).toLocaleString('vi-VN'),
-  joined: '01/01/2025',
-};
+const { Title, Text } = Typography
 
 const roleConfig = {
-  admin:   { color: 'red',    gradient: 'linear-gradient(135deg, #cf1322, #ff4d4f)' },
-  manager: { color: 'orange', gradient: 'linear-gradient(135deg, #d46b08, #ffa940)' },
-  staff:   { color: 'blue',   gradient: 'linear-gradient(135deg, #1677ff, #69b1ff)' },
-};
+  SUPER_ADMIN:  { color: 'red',    label: 'Quản trị viên',       gradient: 'linear-gradient(135deg, #cf1322, #ff4d4f)' },
+  ADMIN:        { color: 'red',    label: 'Quản trị viên',       gradient: 'linear-gradient(135deg, #cf1322, #ff4d4f)' },
+  SALE_MANAGER: { color: 'orange', label: 'Quản lý kinh doanh',  gradient: 'linear-gradient(135deg, #d46b08, #ffa940)' },
+  MANAGER:      { color: 'orange', label: 'Quản lý',            gradient: 'linear-gradient(135deg, #d46b08, #ffa940)' },
+  EDITOR:       { color: 'blue',   label: 'Biên tập viên',       gradient: 'linear-gradient(135deg, #1677ff, #69b1ff)' },
+  STAFF:        { color: 'blue',   label: 'Nhân viên',           gradient: 'linear-gradient(135deg, #1677ff, #69b1ff)' },
+}
 
 const Profile = () => {
-  const [editing, setEditing] = useState(false);
-  const [form] = Form.useForm();
-  const [pwForm] = Form.useForm();
-  const [savingInfo, setSavingInfo] = useState(false);
-  const [savingPw, setSavingPw] = useState(false);
+  const [user, setUser] = useState(null)
+  const [loadingUser, setLoadingUser] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [form] = Form.useForm()
+  const [pwForm] = Form.useForm()
+  const [savingInfo, setSavingInfo] = useState(false)
+  const [savingPw, setSavingPw] = useState(false)
+
+  useEffect(() => {
+    adminApi.getProfile()
+      .then(res => {
+        const data = res.data?.data
+        setUser(data)
+      })
+      .catch(err => {
+        console.error(err)
+        // fallback: đọc từ localStorage nếu API chưa có
+        const stored = localStorage.getItem('toong_cms_user')
+        if (stored) {
+          try { setUser(JSON.parse(stored)) } catch {}
+        }
+      })
+      .finally(() => setLoadingUser(false))
+  }, [])
 
   const handleSaveInfo = async () => {
     try {
-      const values = await form.validateFields();
-      setSavingInfo(true);
-      await new Promise(r => setTimeout(r, 600)); // simulate API
-      console.log('Updated info:', values);
-      message.success('Đã cập nhật thông tin cá nhân');
-      setEditing(false);
-    } catch {}
-    setSavingInfo(false);
-  };
+      const values = await form.validateFields()
+      setSavingInfo(true)
+      await adminApi.updateProfile(values)
+      setUser(prev => ({ ...prev, ...values }))
+      message.success('Đã cập nhật thông tin cá nhân')
+      setEditing(false)
+    } catch (err) {
+      if (err?.errorFields) return // validation error — antd đã hiển thị
+      console.error(err)
+      message.error('Không thể cập nhật thông tin, vui lòng thử lại')
+    } finally {
+      setSavingInfo(false)
+    }
+  }
 
   const handleChangePassword = async () => {
     try {
-      const values = await pwForm.validateFields();
+      const values = await pwForm.validateFields()
       if (values.new_password !== values.confirm_password) {
-        return message.error('Mật khẩu xác nhận không khớp!');
+        return message.error('Mật khẩu xác nhận không khớp!')
       }
-      setSavingPw(true);
-      await new Promise(r => setTimeout(r, 600));
-      console.log('Change password:', values);
-      message.success('Đã đổi mật khẩu thành công');
-      pwForm.resetFields();
-    } catch {}
-    setSavingPw(false);
-  };
+      setSavingPw(true)
+      await adminApi.changePassword({
+        currentPassword: values.current_password,
+        newPassword: values.new_password,
+      })
+      message.success('Đổi mật khẩu thành công. Vui lòng đăng nhập lại!')
+      setTimeout(() => {
+        localStorage.removeItem('toong_cms_token')
+        localStorage.removeItem('toong_cms_user')
+        window.location.href = '/cms/login'
+      }, 1000)
+    } catch (err) {
+      if (err?.errorFields) return
+      console.error(err)
+      const msg = err?.response?.data?.message || 'Đổi mật khẩu thất bại, vui lòng thử lại'
+      message.error(msg)
+    } finally {
+      setSavingPw(false)
+    }
+  }
 
-  const themeGradient = roleConfig[CURRENT_USER.role]?.gradient || 'linear-gradient(135deg, #0D2E2A, #1F4529)';
+  const roleCode = user?.role?.code || user?.roleCode || 'STAFF'
+  const roleInfo = roleConfig[roleCode] || { color: 'default', label: roleCode, gradient: 'linear-gradient(135deg, #0D2E2A, #1F4529)' }
+
+  if (loadingUser) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
+        <Spin size="large" />
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -80,15 +116,13 @@ const Profile = () => {
             style={{ borderRadius: 10, border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}
             styles={{ body: { padding: 0 } }}
           >
-            {/* Cover gradient */}
-            <div style={{ height: 100, background: themeGradient }} />
+            <div style={{ height: 100, background: roleInfo.gradient }} />
 
-            {/* Avatar */}
             <div style={{ textAlign: 'center', marginTop: -40, paddingBottom: 24 }}>
               <Avatar
                 size={80}
                 style={{
-                  background: themeGradient,
+                  background: roleInfo.gradient,
                   border: '3px solid #fff',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                   fontSize: 32,
@@ -96,24 +130,24 @@ const Profile = () => {
                 icon={<UserOutlined />}
               />
               <div style={{ marginTop: 12 }}>
-                <Title level={5} style={{ margin: 0 }}>{CURRENT_USER.name}</Title>
-                <Text type="secondary" style={{ fontSize: 12 }}>@{CURRENT_USER.username}</Text>
+                <Title level={5} style={{ margin: 0 }}>{user?.fullName || user?.name || '—'}</Title>
+                <Text type="secondary" style={{ fontSize: 12 }}>@{user?.username || '—'}</Text>
               </div>
               <div style={{ marginTop: 8 }}>
-                <Tag color={roleConfig[CURRENT_USER.role]?.color} style={{ fontSize: 12 }}>
-                  {CURRENT_USER.roleLabel}
-                </Tag>
-                <Badge status="success" text={<Text style={{ fontSize: 12 }}>Đang hoạt động</Text>} />
+                <Tag color={roleInfo.color} style={{ fontSize: 12 }}>{roleInfo.label}</Tag>
+                <Badge
+                  status={user?.status === 'active' ? 'success' : 'error'}
+                  text={<Text style={{ fontSize: 12 }}>{user?.status === 'active' ? 'Đang hoạt động' : 'Đã khóa'}</Text>}
+                />
               </div>
 
               <Divider style={{ margin: '16px 0 12px' }} />
 
               <div style={{ textAlign: 'left', padding: '0 20px' }}>
                 {[
-                  { icon: <MailOutlined />, label: CURRENT_USER.email },
-                  { icon: <PhoneOutlined />, label: CURRENT_USER.phone },
-                  { icon: <IdcardOutlined />, label: `ID: #${CURRENT_USER.id}` },
-                  { icon: <CheckCircleOutlined />, label: `Tham gia: ${CURRENT_USER.joined}` },
+                  { icon: <MailOutlined />,       label: user?.email || '—' },
+                  { icon: <IdcardOutlined />,      label: `ID: #${user?.id || '—'}` },
+                  { icon: <CheckCircleOutlined />, label: `Tham gia: ${user?.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : '—'}` },
                 ].map((item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                     <span style={{ color: '#999', fontSize: 14 }}>{item.icon}</span>
@@ -124,7 +158,7 @@ const Profile = () => {
 
               <Divider style={{ margin: '12px 0 8px' }} />
               <Text type="secondary" style={{ fontSize: 11 }}>
-                Đăng nhập lần cuối: {CURRENT_USER.last_login}
+                Đăng nhập lần cuối: {user?.lastLogin ? new Date(user.lastLogin).toLocaleString('vi-VN') : '—'}
               </Text>
             </div>
           </Card>
@@ -134,7 +168,7 @@ const Profile = () => {
         <Col xs={24} md={16}>
           <Card
             style={{ borderRadius: 10, border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
-            styles={{ body: { padding: '0' } }}
+            styles={{ body: { padding: 0 } }}
           >
             <Tabs
               defaultActiveKey="info"
@@ -148,48 +182,53 @@ const Profile = () => {
                       {!editing ? (
                         <>
                           <Descriptions column={1} bordered size="small" style={{ marginBottom: 20 }}>
-                            <Descriptions.Item label="Họ và tên">{CURRENT_USER.name}</Descriptions.Item>
-                            <Descriptions.Item label="Tên đăng nhập">{CURRENT_USER.username}</Descriptions.Item>
-                            <Descriptions.Item label="Email">{CURRENT_USER.email}</Descriptions.Item>
-                            <Descriptions.Item label="Số điện thoại">{CURRENT_USER.phone}</Descriptions.Item>
+                            <Descriptions.Item label="Họ và tên">{user?.fullName || user?.name || '—'}</Descriptions.Item>
+                            <Descriptions.Item label="Tên đăng nhập">{user?.username || '—'}</Descriptions.Item>
+                            <Descriptions.Item label="Email">{user?.email || '—'}</Descriptions.Item>
                             <Descriptions.Item label="Vai trò">
-                              <Tag color={roleConfig[CURRENT_USER.role]?.color}>{CURRENT_USER.roleLabel}</Tag>
+                              <Tag color={roleInfo.color}>{roleInfo.label}</Tag>
                             </Descriptions.Item>
                           </Descriptions>
                           <Button
                             type="primary"
                             icon={<EditOutlined />}
-                            onClick={() => { form.setFieldsValue(CURRENT_USER); setEditing(true); }}
+                            style={{ background: '#1F4529', borderColor: '#1F4529' }}
+                            onClick={() => {
+                              form.setFieldsValue({
+                                fullName: user?.fullName || user?.name,
+                                email: user?.email,
+                              })
+                              setEditing(true)
+                            }}
                           >
                             Chỉnh sửa thông tin
                           </Button>
                         </>
                       ) : (
-                        <Form form={form} layout="vertical" initialValues={CURRENT_USER}>
+                        <Form form={form} layout="vertical">
                           <Row gutter={16}>
                             <Col span={24}>
-                              <Form.Item name="name" label="Họ và tên" rules={[{ required: true }]}>
+                              <Form.Item name="fullName" label="Họ và tên" rules={[{ required: true, message: 'Vui lòng nhập họ và tên' }]}>
                                 <Input placeholder="Nhập họ và tên..." />
                               </Form.Item>
                             </Col>
-                            <Col span={12}>
-                              <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
+                            <Col span={24}>
+                              <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email', message: 'Email không hợp lệ' }]}>
                                 <Input placeholder="email@toong.vn" />
-                              </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                              <Form.Item name="phone" label="Số điện thoại">
-                                <Input placeholder="09xxxxxxxx" />
                               </Form.Item>
                             </Col>
                           </Row>
                           <Space>
-                            <Button type="primary" icon={<SaveOutlined />} loading={savingInfo} onClick={handleSaveInfo}>
+                            <Button
+                              type="primary"
+                              icon={<SaveOutlined />}
+                              loading={savingInfo}
+                              style={{ background: '#1F4529', borderColor: '#1F4529' }}
+                              onClick={handleSaveInfo}
+                            >
                               Lưu thay đổi
                             </Button>
-                            <Button icon={<CloseOutlined />} onClick={() => setEditing(false)}>
-                              Hủy
-                            </Button>
+                            <Button icon={<CloseOutlined />} onClick={() => setEditing(false)}>Hủy</Button>
                           </Space>
                         </Form>
                       )}
@@ -219,19 +258,33 @@ const Profile = () => {
                         <Form.Item
                           name="confirm_password"
                           label="Xác nhận mật khẩu mới"
-                          rules={[{ required: true, message: 'Vui lòng xác nhận mật khẩu' }]}
+                          dependencies={['new_password']}
+                          rules={[
+                            { required: true, message: 'Vui lòng xác nhận mật khẩu' },
+                            ({ getFieldValue }) => ({
+                              validator(_, value) {
+                                if (!value || getFieldValue('new_password') === value) return Promise.resolve()
+                                return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'))
+                              },
+                            }),
+                          ]}
                         >
                           <Input.Password placeholder="••••••••" />
                         </Form.Item>
 
-                        <div style={{ padding: '10px 14px', background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: 6, marginBottom: 16, fontSize: 12, color: '#875800' }}>
-                          💡 Mật khẩu nên có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số.
+                        <div style={{
+                          padding: '10px 14px', background: '#fffbe6',
+                          border: '1px solid #ffe58f', borderRadius: 6,
+                          marginBottom: 16, fontSize: 12, color: '#875800',
+                        }}>
+                          Mật khẩu nên có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số.
                         </div>
 
                         <Button
                           type="primary"
                           icon={<LockOutlined />}
                           loading={savingPw}
+                          style={{ background: '#1F4529', borderColor: '#1F4529' }}
                           onClick={handleChangePassword}
                         >
                           Đổi mật khẩu
@@ -246,7 +299,7 @@ const Profile = () => {
         </Col>
       </Row>
     </div>
-  );
-};
+  )
+}
 
-export default Profile;
+export default Profile

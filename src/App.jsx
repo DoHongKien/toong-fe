@@ -18,8 +18,10 @@ import PassOrders from './pages/cms/PassOrders'
 import BannerManagement from './pages/cms/BannerManagement'
 import BlogManagement from './pages/cms/BlogManagement'
 import FAQManagement from './pages/cms/FAQManagement'
+import TourFAQManagement from './pages/cms/TourFAQManagement'
 import Contacts from './pages/cms/Contacts'
 import Profile from './pages/cms/Profile'
+import NotificationConfig from './pages/cms/NotificationConfig'
 
 const App = () => {
   return (
@@ -53,9 +55,11 @@ const App = () => {
             <Route path="banners" element={<BannerManagement />} />
             <Route path="blogs" element={<BlogManagement />} />
             <Route path="faqs" element={<FAQManagement />} />
+            <Route path="tours/:tourId/faqs" element={<TourFAQManagement />} />
             <Route path="contacts" element={<Contacts />} />
             <Route path="staff" element={<StaffManagement />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="notification-configs" element={<NotificationConfig />} />
           </Route>
         </Routes>
       </AuthProvider>
