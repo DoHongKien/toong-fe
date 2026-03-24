@@ -4,9 +4,9 @@ import { ProTable } from '@ant-design/pro-components';
 import {
   Button, Tag, Space, message, Popconfirm, Modal, Descriptions,
   Divider, Typography, Upload, Spin, Form, Row, Col, Input,
-  Select, InputNumber, Tooltip, Collapse, Switch,
+  Select, InputNumber, Tooltip, Collapse, Switch, Dropdown,
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, EnvironmentOutlined, InboxOutlined, PictureOutlined, QuestionCircleOutlined, DollarOutlined, TagsOutlined, MinusCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, EnvironmentOutlined, InboxOutlined, PictureOutlined, QuestionCircleOutlined, DollarOutlined, TagsOutlined, MinusCircleOutlined, MoreOutlined } from '@ant-design/icons';
 import { adminApi } from '../../api/api';
 
 const { Title, Text } = Typography;
@@ -464,11 +464,43 @@ const ToursManagement = () => {
     return false
   }
 
-  const handleOpenModal = (record) => {
-    setCurrentRecord(record)
+  const handleOpenModal = async (record) => {
+    if (record?.id) {
+      const hide = message.loading('Đang lấy chi tiết tour...', 0)
+      try {
+        const res = await adminApi.getTourById(record.id)
+        const fullData = res.data?.data
+        setCurrentRecord(fullData)
+        setCardImagePreview(fullData?.cardImage || null)
+      } catch (err) {
+        console.error(err)
+        message.error('Không thể lấy chi tiết tour')
+        return
+      } finally {
+        hide()
+      }
+    } else {
+      setCurrentRecord(null)
+      setCardImagePreview(null)
+    }
     setUploadedCardImage(null)
-    setCardImagePreview(record?.cardImage || null)
     setModalVisit(true)
+  }
+
+  const handleShowDetail = async (record) => {
+    const hide = message.loading('Đang tải chi tiết...', 0)
+    try {
+      const res = await adminApi.getTourById(record.id)
+      const fullData = res.data?.data
+      setCurrentRecord(fullData)
+      setCardImagePreview(fullData?.cardImage || null)
+      setShowDetail(true)
+    } catch (err) {
+      console.error(err)
+      message.error('Không thể lấy chi tiết tour')
+    } finally {
+      hide()
+    }
   }
 
   const columns = [
@@ -585,68 +617,84 @@ const ToursManagement = () => {
       title: 'Thao tác',
       valueType: 'option',
       key: 'option',
-      width: 200,
-      render: (_, record, __, action) => (
-        <Space size={4}>
-          <Tooltip title="Xem chi tiết">
-            <Button
-              size="small" type="default" icon={<EyeOutlined />}
-              onClick={() => { setCurrentRecord(record); setCardImagePreview(record?.cardImage || null); setShowDetail(true); }}
-            />
-          </Tooltip>
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              size="small" type="primary" icon={<EditOutlined />}
-              onClick={() => handleOpenModal(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Quản lý FAQ tour">
-            <Button
-              size="small"
-              icon={<QuestionCircleOutlined />}
-              style={{ color: '#1F4529', borderColor: '#1F4529' }}
-              onClick={() => navigate(`/cms/tours/${record.id}/faqs`)}
-            />
-          </Tooltip>
-          <Tooltip title="Chi phí bao gồm / không bao gồm">
-            <Button
-              size="small"
-              icon={<DollarOutlined />}
-              style={{ color: '#d46b08', borderColor: '#d46b08' }}
-              onClick={() => navigate(`/cms/tours/${record.id}/cost-details`)}
-            />
-          </Tooltip>
-          <Tooltip title="Hành lý & Trang bị">
-            <Button
-              size="small"
-              icon={<TagsOutlined />}
-              style={{ color: '#0958d9', borderColor: '#0958d9' }}
-              onClick={() => navigate(`/cms/tours/${record.id}/luggages`)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xóa tour này?"
-            description="Hành động này không thể hoàn tác."
-            onConfirm={async () => {
-              try {
-                await adminApi.deleteTour(record.id);
-                message.success('Đã xóa tour thành công');
-                action?.reload();
-              } catch (err) {
-                console.error(err);
-                message.error('Không thể xóa tour');
-              }
-            }}
-            okText="Xác nhận xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Tooltip title="Xóa tour">
-              <Button size="small" danger icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
+      width: 120,
+      render: (_, record, __, action) => [
+        <Button
+          key="edit"
+          type="text"
+          size="small"
+          icon={<EditOutlined style={{ color: '#1F4529' }} />}
+          onClick={() => handleOpenModal(record)}
+          style={{ fontWeight: 500 }}
+        >
+          Sửa
+        </Button>,
+        <Dropdown
+          key="more"
+          trigger={['click']}
+          menu={{
+            items: [
+              {
+                key: 'view',
+                label: 'Xem chi tiết',
+                icon: <EyeOutlined />,
+                onClick: () => handleShowDetail(record),
+              },
+              { type: 'divider' },
+              {
+                key: 'faq',
+                label: 'Quản lý FAQ',
+                icon: <QuestionCircleOutlined />,
+                onClick: () => navigate(`/cms/tours/${record.id}/faqs`),
+              },
+              {
+                key: 'cost',
+                label: 'Chi phí chi tiết',
+                icon: <DollarOutlined />,
+                onClick: () => navigate(`/cms/tours/${record.id}/cost-details`),
+              },
+              {
+                key: 'luggage',
+                label: 'Hành lý & Trang bị',
+                icon: <TagsOutlined />,
+                onClick: () => navigate(`/cms/tours/${record.id}/luggages`),
+              },
+              { type: 'divider' },
+              {
+                key: 'delete',
+                label: 'Xóa tour',
+                icon: <DeleteOutlined />,
+                danger: true,
+                onClick: () => {
+                  Modal.confirm({
+                    title: 'Xóa tour này?',
+                    content: 'Hành động này không thể hoàn tác và sẽ xóa toàn bộ dữ liệu liên quan.',
+                    okText: 'Xác nhận xóa',
+                    okType: 'danger',
+                    cancelText: 'Hủy',
+                    onOk: async () => {
+                      try {
+                        await adminApi.deleteTour(record.id);
+                        message.success('Đã xóa tour thành công');
+                        action?.reload();
+                      } catch (err) {
+                        console.error(err);
+                        message.error('Không thể xóa tour');
+                      }
+                    },
+                  });
+                },
+              },
+            ],
+          }}
+        >
+          <Button
+            type="text"
+            size="small"
+            icon={<MoreOutlined />}
+          />
+        </Dropdown>,
+      ],
     },
   ];
 

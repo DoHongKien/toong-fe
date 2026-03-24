@@ -159,6 +159,225 @@ INSERT INTO menus (parent_id, tour_id, label, type, mega_main_title, mega_descri
 (3, 24, 'Nhìu Cồ San', 'ITEM', 'Nhìu Cồ San', 'Hành trình khám phá vương quốc của băng giá và sương mù.', 'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=400&q=80', 8),
 (3, 25, 'Tả Liên Sơn', 'ITEM', 'Tả Liên Sơn', 'Lạc vào khu rừng cổ tích với những gốc trà cổ thụ.', 'https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=400&q=80', 9),
 (3, 26, 'Ky Quan San', 'ITEM', 'Ky Quan San', 'Chinh phục Bạch Mộc Lương Tử - Thiên đường săn mây.', 'https://images.unsplash.com/photo-1522199755839-a2bacb67c546?auto=format&fit=crop&w=400&q=80', 10),
-(3, 27, 'Phu Sa Phìn(Tà Xùa)', 'ITEM', 'Phu Sa Phìn(Tà Xùa)', 'Khám phá sống lưng khủng long Tà Xùa và biển mây.', 'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=400&q=80', 11),
-(3, 28, 'Lảo Thẩn', 'ITEM', 'Lảo Thẩn', 'Cung trekking nhẹ nhàng, lý tưởng để săn mây.', 'https://images.unsplash.com/photo-1438786657495-640937046d18?auto=format&fit=crop&w=400&q=80', 12);
+(3, 27, 'Phu Sa Ph\u00ecn(T\u00e0 X\u00f9a)', 'ITEM', 'Phu Sa Ph\u00ecn(T\u00e0 X\u00f9a)', 'Kh\u00e1m ph\u00e1 s\u1ed1ng l\u01b0ng kh\u1ee7ng long T\u00e0 X\u00f9a v\u00e0 bi\u1ec3n m\u00e2y.', 'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=400&q=80', 11),
+(3, 28, 'L\u1ea3o Th\u1ea9n', 'ITEM', 'L\u1ea3o Th\u1ea9n', 'Cung trekking nh\u1eb9 nh\u00e0ng, l\u00fd t\u01b0\u1edfng \u0111\u1ec3 s\u0103n m\u00e2y.', 'https://images.unsplash.com/photo-1438786657495-640937046d18?auto=format&fit=crop&w=400&q=80', 12);
 ```
+
+
+---
+
+## 11. DỮ LIỆU BẢNG MENUS — CMS SIDEBAR (context = 'CMS')
+
+> Dựa trên cấu trúc menu hiện tại trong `CMSLayout.jsx`.
+> **Yêu cầu bảng phải có 2 cột bổ sung trước khi chạy:**
+> ```sql
+> ALTER TABLE menus ADD COLUMN context ENUM('CLIENT','CMS') NOT NULL DEFAULT 'CLIENT';
+> ALTER TABLE menus ADD COLUMN icon VARCHAR(100) NULL;
+> ```
+
+### Cấu trúc cây
+
+```
+Dashboard                  (root, ITEM, href=/cms)
+Kinh doanh                 (root, SIMPLE, group)
+  ├─ Quản lý Tour          (/cms/tours)
+  ├─ Quản lý Booking       (/cms/bookings)
+  ├─ Adventure Pass        (/cms/passes)
+  └─ Đơn mua Pass          (/cms/pass-orders)
+Nội dung                   (root, SIMPLE, group)
+  ├─ Banner / Hero         (/cms/banners)
+  ├─ Blog / Tin tức        (/cms/blogs)
+  ├─ Quản lý FAQ           (/cms/faqs)
+  └─ Hộp thư liên hệ      (/cms/contacts)
+Hệ thống                   (root, SIMPLE, group)
+  ├─ Nhân viên             (/cms/staff)
+  ├─ Cấu hình thông báo   (/cms/notification-configs)
+  ├─ Phân quyền            (/cms/roles)
+  └─ Quản lý Menu          (/cms/menus)
+```
+
+### Phương án A — JOIN tự động (MySQL 8.0+ / MariaDB)
+
+```sql
+-- Level 0: Root groups
+INSERT INTO menus (key_name, label, href, type, icon, order_index, is_active, context, parent_id, tour_id, mega_accent_title, mega_main_title, mega_description, mega_image) VALUES
+('cms-dashboard', 'Dashboard',  '/cms', 'ITEM',   'DashboardOutlined', 1, TRUE, 'CMS', NULL, NULL, NULL, NULL, NULL, NULL),
+('cms-business',  'Kinh doanh', NULL,   'SIMPLE', 'ShoppingOutlined',  2, TRUE, 'CMS', NULL, NULL, NULL, NULL, NULL, NULL),
+('cms-content',   'Nội dung',   NULL,   'SIMPLE', 'FileTextOutlined',  3, TRUE, 'CMS', NULL, NULL, NULL, NULL, NULL, NULL),
+('cms-system',    'Hệ thống',   NULL,   'SIMPLE', 'TeamOutlined',      4, TRUE, 'CMS', NULL, NULL, NULL, NULL, NULL, NULL);
+
+-- Level 1: Con của "Kinh doanh"
+INSERT INTO menus (key_name, label, href, type, icon, order_index, is_active, context, parent_id, tour_id, mega_accent_title, mega_main_title, mega_description, mega_image)
+SELECT t.k, t.l, t.h, 'ITEM', t.i, t.o, TRUE, 'CMS', m.id, NULL, NULL, NULL, NULL, NULL
+FROM (
+  SELECT 'cms-tours'        k, 'Quản lý Tour'    l, '/cms/tours'        h, 'EnvironmentOutlined' i, 1 o UNION ALL
+  SELECT 'cms-bookings',       'Quản lý Booking', '/cms/bookings',    'CalendarOutlined',    2 UNION ALL
+  SELECT 'cms-passes',         'Adventure Pass',  '/cms/passes',      'CrownOutlined',       3 UNION ALL
+  SELECT 'cms-pass-orders',    'Đơn mua Pass',    '/cms/pass-orders', 'IdcardOutlined',      4
+) t JOIN menus m ON m.key_name = 'cms-business' AND m.context = 'CMS';
+
+-- Level 1: Con của "Nội dung"
+INSERT INTO menus (key_name, label, href, type, icon, order_index, is_active, context, parent_id, tour_id, mega_accent_title, mega_main_title, mega_description, mega_image)
+SELECT t.k, t.l, t.h, 'ITEM', t.i, t.o, TRUE, 'CMS', m.id, NULL, NULL, NULL, NULL, NULL
+FROM (
+  SELECT 'cms-banners'  k, 'Banner / Hero'    l, '/cms/banners'  h, 'PictureOutlined'        i, 1 o UNION ALL
+  SELECT 'cms-blogs',      'Blog / Tin tức',   '/cms/blogs',    'CommentOutlined',         2 UNION ALL
+  SELECT 'cms-faqs',       'Quản lý FAQ',      '/cms/faqs',     'QuestionCircleOutlined',  3 UNION ALL
+  SELECT 'cms-contacts',   'Hộp thư liên hệ', '/cms/contacts', 'MailOutlined',            4
+) t JOIN menus m ON m.key_name = 'cms-content' AND m.context = 'CMS';
+
+-- Level 1: Con của "Hệ thống"
+INSERT INTO menus (key_name, label, href, type, icon, order_index, is_active, context, parent_id, tour_id, mega_accent_title, mega_main_title, mega_description, mega_image)
+SELECT t.k, t.l, t.h, 'ITEM', t.i, t.o, TRUE, 'CMS', m.id, NULL, NULL, NULL, NULL, NULL
+FROM (
+  SELECT 'cms-staff'               k, 'Nhân viên'           l, '/cms/staff'                h, 'UserOutlined'              i, 1 o UNION ALL
+  SELECT 'cms-notification-configs', 'Cấu hình thông báo',  '/cms/notification-configs',  'SettingOutlined',           2 UNION ALL
+  SELECT 'cms-roles',                'Phân quyền',           '/cms/roles',                 'SafetyCertificateOutlined', 3 UNION ALL
+  SELECT 'cms-menus',                'Quản lý Menu',         '/cms/menus',                 'AppstoreOutlined',          4
+) t JOIN menus m ON m.key_name = 'cms-system' AND m.context = 'CMS';
+```
+
+### Phương án B — Hardcode ID (tương thích MySQL < 8.0.19)
+
+> Điều chỉnh `id` bắt đầu phù hợp với trạng thái `AUTO_INCREMENT` thực tế.
+
+```sql
+SET @biz = 201;
+SET @ctn = 202;
+SET @sys = 203;
+
+INSERT INTO menus (id, key_name, label, href, type, icon, order_index, is_active, context, parent_id, tour_id, mega_accent_title, mega_main_title, mega_description, mega_image) VALUES
+-- Root
+(200, 'cms-dashboard', 'Dashboard',  '/cms', 'ITEM',   'DashboardOutlined', 1, TRUE, 'CMS', NULL, NULL, NULL, NULL, NULL, NULL),
+(201, 'cms-business',  'Kinh doanh', NULL,   'SIMPLE', 'ShoppingOutlined',  2, TRUE, 'CMS', NULL, NULL, NULL, NULL, NULL, NULL),
+(202, 'cms-content',   'Nội dung',   NULL,   'SIMPLE', 'FileTextOutlined',  3, TRUE, 'CMS', NULL, NULL, NULL, NULL, NULL, NULL),
+(203, 'cms-system',    'Hệ thống',   NULL,   'SIMPLE', 'TeamOutlined',      4, TRUE, 'CMS', NULL, NULL, NULL, NULL, NULL, NULL),
+-- Con của Kinh doanh
+(204, 'cms-tours',        'Quản lý Tour',    '/cms/tours',        'ITEM', 'EnvironmentOutlined', 1, TRUE, 'CMS', @biz, NULL, NULL, NULL, NULL, NULL),
+(205, 'cms-bookings',     'Quản lý Booking', '/cms/bookings',     'ITEM', 'CalendarOutlined',    2, TRUE, 'CMS', @biz, NULL, NULL, NULL, NULL, NULL),
+(206, 'cms-passes',       'Adventure Pass',  '/cms/passes',       'ITEM', 'CrownOutlined',       3, TRUE, 'CMS', @biz, NULL, NULL, NULL, NULL, NULL),
+(207, 'cms-pass-orders',  'Đơn mua Pass',    '/cms/pass-orders',  'ITEM', 'IdcardOutlined',      4, TRUE, 'CMS', @biz, NULL, NULL, NULL, NULL, NULL),
+-- Con của Nội dung
+(208, 'cms-banners',  'Banner / Hero',    '/cms/banners',  'ITEM', 'PictureOutlined',        1, TRUE, 'CMS', @ctn, NULL, NULL, NULL, NULL, NULL),
+(209, 'cms-blogs',    'Blog / Tin tức',   '/cms/blogs',    'ITEM', 'CommentOutlined',         2, TRUE, 'CMS', @ctn, NULL, NULL, NULL, NULL, NULL),
+(210, 'cms-faqs',     'Quản lý FAQ',      '/cms/faqs',     'ITEM', 'QuestionCircleOutlined',  3, TRUE, 'CMS', @ctn, NULL, NULL, NULL, NULL, NULL),
+(211, 'cms-contacts', 'Hộp thư liên hệ', '/cms/contacts', 'ITEM', 'MailOutlined',            4, TRUE, 'CMS', @ctn, NULL, NULL, NULL, NULL, NULL),
+-- Con của Hệ thống
+(212, 'cms-staff',                'Nhân viên',           '/cms/staff',                'ITEM', 'UserOutlined',              1, TRUE, 'CMS', @sys, NULL, NULL, NULL, NULL, NULL),
+(213, 'cms-notification-configs', 'Cấu hình thông báo', '/cms/notification-configs', 'ITEM', 'SettingOutlined',            2, TRUE, 'CMS', @sys, NULL, NULL, NULL, NULL, NULL),
+(214, 'cms-roles',                'Phân quyền',          '/cms/roles',               'ITEM', 'SafetyCertificateOutlined',  3, TRUE, 'CMS', @sys, NULL, NULL, NULL, NULL, NULL),
+(215, 'cms-menus',                'Quản lý Menu',        '/cms/menus',               'ITEM', 'AppstoreOutlined',           4, TRUE, 'CMS', @sys, NULL, NULL, NULL, NULL, NULL);
+```
+
+
+---
+
+## 12. DỮ LIỆU BẢNG PERMISSIONS — Bổ sung còn thiếu
+
+### Phân tích gap so với DB hiện tại
+
+| Module | Có sẵn | Còn thiếu |
+|---|---|---|
+| Tour | tour:view, tour:create, tour:edit, tour:delete | — |
+| Booking | booking:view, booking:edit, booking:delete | booking:create |
+| Banner | banner:view, banner:manage | — |
+| Blog | blog:view, blog:manage | — |
+| Staff | staff:view, staff:manage | — |
+| **Pass** | ❌ | pass:view, pass:create, pass:edit, pass:delete |
+| **FAQ (chung)** | ❌ | faq:view, faq:manage |
+| **Contact** | ❌ | contact:view, contact:manage |
+| **Notification** | ❌ | notification:view, notification:manage |
+| **Role / Quyền** | ❌ | role:view, role:manage |
+| **Menu** | ❌ | menu:view, menu:manage |
+
+> **Lưu ý format code:** Tất cả dùng dạng `module:action` snake_case để nhất quán với DB hiện tại.
+
+### Mapping `required_permission` cho menu CMS (cập nhật theo format thực tế)
+
+| Menu `key_name` | `required_permission` |
+|---|---|
+| `cms-dashboard` | `NULL` |
+| `cms-tours` | `tour:view` |
+| `cms-bookings` | `booking:view` |
+| `cms-passes` | `pass:view` |
+| `cms-pass-orders` | `pass:view` |
+| `cms-banners` | `banner:manage` |
+| `cms-blogs` | `blog:manage` |
+| `cms-faqs` | `faq:manage` |
+| `cms-contacts` | `contact:view` |
+| `cms-staff` | `staff:manage` |
+| `cms-notification-configs` | `notification:manage` |
+| `cms-roles` | `role:manage` |
+| `cms-menus` | `menu:manage` |
+
+### INSERT — Permissions còn thiếu (id bắt đầu từ 14)
+
+```sql
+INSERT INTO permissions (id, code, module, name) VALUES
+-- ── Pass (Adventure Pass + Đơn mua Pass) ─────────────────────────
+(14, 'pass:view',   'Pass', 'Xem danh sách Pass & đơn mua'),
+(15, 'pass:create', 'Pass', 'Thêm Adventure Pass mới'),
+(16, 'pass:edit',   'Pass', 'Sửa thông tin Adventure Pass'),
+(17, 'pass:delete', 'Pass', 'Xoá Adventure Pass'),
+
+-- ── FAQ chung (General FAQs — /cms/faqs) ──────────────────────────
+(18, 'faq:view',   'FAQ', 'Xem danh sách FAQ chung'),
+(19, 'faq:manage', 'FAQ', 'Quản lý FAQ chung (thêm, sửa, xoá)'),
+
+-- ── Contact (Hộp thư liên hệ) ─────────────────────────────────────
+(20, 'contact:view',   'Contact', 'Xem hộp thư liên hệ'),
+(21, 'contact:manage', 'Contact', 'Xử lý & cập nhật trạng thái liên hệ'),
+
+-- ── Notification (Cấu hình thông báo) ────────────────────────────
+(22, 'notification:view',   'System', 'Xem cấu hình thông báo'),
+(23, 'notification:manage', 'System', 'Quản lý cấu hình thông báo'),
+
+-- ── Role & Permission ─────────────────────────────────────────────
+(24, 'role:view',   'System', 'Xem danh sách vai trò & quyền hạn'),
+(25, 'role:manage', 'System', 'Quản lý vai trò & phân quyền (thêm, sửa, xoá, gán)'),
+
+-- ── Menu ──────────────────────────────────────────────────────────
+(26, 'menu:view',   'System', 'Xem cấu hình menu điều hướng'),
+(27, 'menu:manage', 'System', 'Quản lý menu (thêm, sửa, xoá, reorder, toggle)'),
+
+-- ── Booking bổ sung ───────────────────────────────────────────────
+(28, 'booking:create', 'Booking', 'Tạo đơn đặt chỗ thủ công');
+```
+
+### Danh sách đầy đủ sau khi bổ sung (28 permissions)
+
+```sql
+-- Kiểm tra nhanh sau khi insert
+SELECT id, code, module, name FROM permissions ORDER BY module, id;
+```
+
+| id | code | module | name |
+|---|---|---|---|
+| 8 | banner:view | CMS | Xem banner |
+| 9 | banner:manage | CMS | Quản lý banner |
+| 10 | blog:view | CMS | Xem bài viết |
+| 11 | blog:manage | CMS | Quản lý bài viết |
+| 5 | booking:view | Booking | Xem đơn đặt chỗ |
+| 28 | booking:create | Booking | Tạo đơn đặt chỗ thủ công |
+| 6 | booking:edit | Booking | Cập nhật trạng thái đơn |
+| 7 | booking:delete | Booking | Xoá đơn đặt chỗ |
+| 20 | contact:view | Contact | Xem hộp thư liên hệ |
+| 21 | contact:manage | Contact | Xử lý & cập nhật trạng thái liên hệ |
+| 18 | faq:view | FAQ | Xem danh sách FAQ chung |
+| 19 | faq:manage | FAQ | Quản lý FAQ chung (thêm, sửa, xoá) |
+| 26 | menu:view | System | Xem cấu hình menu điều hướng |
+| 27 | menu:manage | System | Quản lý menu (thêm, sửa, xoá, reorder, toggle) |
+| 22 | notification:view | System | Xem cấu hình thông báo |
+| 23 | notification:manage | System | Quản lý cấu hình thông báo |
+| 14 | pass:view | Pass | Xem danh sách Pass & đơn mua |
+| 15 | pass:create | Pass | Thêm Adventure Pass mới |
+| 16 | pass:edit | Pass | Sửa thông tin Adventure Pass |
+| 17 | pass:delete | Pass | Xoá Adventure Pass |
+| 24 | role:view | System | Xem danh sách vai trò & quyền hạn |
+| 25 | role:manage | System | Quản lý vai trò & phân quyền |
+| 12 | staff:view | Staff | Xem danh sách nhân viên |
+| 13 | staff:manage | Staff | Quản lý nhân viên |
+| 1 | tour:view | Tour | Xem danh sách tour |
+| 2 | tour:create | Tour | Thêm tour mới |
+| 3 | tour:edit | Tour | Sửa thông tin tour |
+| 4 | tour:delete | Tour | Xoá tour |

@@ -4,16 +4,12 @@ description: Upgrades existing websites and apps to premium quality. Audits curr
 ---
 
 ---
-
 name: design-taste-frontend
 description: Senior UI/UX Engineer. Architect digital interfaces overriding default LLM biases. Enforces metric-based rules, strict component architecture, CSS hardware acceleration, and balanced design engineering.
-
 ---
-
 # High-Agency Frontend Skill
 
 ## 1. ACTIVE BASELINE CONFIGURATION
-
 - DESIGN_VARIANCE: 8 (1=Perfect Symmetry, 10=Artsy Chaos)
 - MOTION_INTENSITY: 6 (1=Static/No movement, 10=Cinematic/Magic Physics)
 - VISUAL_DENSITY: 4 (1=Art Gallery/Airy, 10=Pilot Cockpit/Packed Data)
@@ -21,7 +17,6 @@ description: Senior UI/UX Engineer. Architect digital interfaces overriding defa
 **AI Instruction:** The standard baseline for all generations is strictly set to these values (8, 6, 4). Do not ask the user to edit this file. Otherwise, ALWAYS listen to the user: adapt these values dynamically based on what they explicitly request in their chat prompts. Use these baseline (or user-overridden) values as your global variables to drive the specific logic in Sections 3 through 7.
 
 ## 2. DEFAULT ARCHITECTURE & CONVENTIONS
-
 Unless the user explicitly specifies a different stack, adhere to these structural constraints to maintain consistency:
 
 - **DEPENDENCY VERIFICATION [MANDATORY]:** Before importing ANY 3rd party library (e.g. `framer-motion`, `lucide-react`, `zustand`), you MUST check `package.json`. If the package is missing, you MUST output the installation command (e.g. `npm install package-name`) before providing the code. **Never** assume a library exists.
@@ -41,7 +36,6 @@ Unless the user explicitly specifies a different stack, adhere to these structur
 - **Icons:** You MUST use exactly `@phosphor-icons/react` or `@radix-ui/react-icons` as the import paths (check installed version). Standardize `strokeWidth` globally (e.g., exclusively use `1.5` or `2.0`).
 
 ## 3. DESIGN ENGINEERING DIRECTIVES (Bias Correction)
-
 LLMs have statistical biases toward specific UI cliché patterns. Proactively construct premium interfaces using these engineered rules:
 
 **Rule 1: Deterministic Typography**
@@ -79,7 +73,6 @@ LLMs have statistical biases toward specific UI cliché patterns. Proactively co
 - **Forms:** Label MUST sit above input. Helper text is optional but should exist in markup. Error text below input. Use a standard `gap-2` for input blocks.
 
 ## 4. CREATIVE PROACTIVITY (Anti-Slop Implementation)
-
 To actively combat generic AI designs, systematically implement these high-end coding concepts as your baseline:
 
 - **"Liquid Glass" Refraction:** When glassmorphism is needed, go beyond `backdrop-blur`. Add a 1px inner border (`border-white/10`) and a subtle inner shadow (`shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]`) to simulate physical edge refraction.

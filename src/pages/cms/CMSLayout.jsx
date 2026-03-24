@@ -28,6 +28,8 @@ import {
   ShoppingOutlined,
   CrownOutlined,
   SettingOutlined,
+  SafetyCertificateOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { adminApi } from '../../api/api'
@@ -59,12 +61,75 @@ const ROUTE_LABELS = {
   '/cms/staff': 'Nhân viên',
   '/cms/profile': 'Hồ sơ cá nhân',
   '/cms/notification-configs': 'Cấu hình thông báo',
+  '/cms/roles': 'Phân quyền & Vai trò',
+  '/cms/menus': 'Quản lý Menu',
 }
 
 const getRouteLabel = (pathname) => {
   if (ROUTE_LABELS[pathname]) return ROUTE_LABELS[pathname]
   if (/\/cms\/tours\/\d+\/faqs/.test(pathname)) return 'FAQ theo Tour'
   return 'CMS'
+}
+
+// ─── Icon resolver (string name → Ant Design JSX) ───────────────────────
+// Fallback icon khi name không map được
+const ICON_MAP = {
+  DashboardOutlined,
+  EnvironmentOutlined,
+  CalendarOutlined,
+  CrownOutlined,
+  IdcardOutlined,
+  PictureOutlined,
+  CommentOutlined,
+  QuestionCircleOutlined,
+  MailOutlined,
+  ShoppingOutlined,
+  TeamOutlined,
+  UserOutlined,
+  SettingOutlined,
+  SafetyCertificateOutlined,
+  AppstoreOutlined,
+  FileTextOutlined,
+}
+
+const resolveIcon = (iconName) => {
+  const Comp = ICON_MAP[iconName]
+  return Comp ? <Comp /> : <AppstoreOutlined />
+}
+
+// Convert API nested tree → antd Menu `items` format
+const buildAntdMenuItems = (nodes) =>
+  nodes
+    .filter(n => n.isActive !== false)
+    .map(node => {
+      const icon = node.icon ? resolveIcon(node.icon) : undefined
+      const hasChildren = Array.isArray(node.children) && node.children.length > 0
+
+      if (hasChildren) {
+        return {
+          key:      node.keyName,         // group key (e.g. 'cms-business')
+          label:    node.label,
+          icon,
+          children: buildAntdMenuItems(node.children),
+        }
+      }
+      return {
+        key:   node.href ?? node.keyName, // leaf key = href (để navigate)
+        label: node.label,
+        icon,
+      }
+    })
+
+// Tìm group key chứa route hiện tại (dùng cho defaultOpenKeys)
+const findOpenGroups = (nodes, pathname) => {
+  for (const node of nodes) {
+    if (!node.children?.length) continue
+    const hit = node.children.some(c => c.href === pathname || c.keyName === pathname)
+    if (hit) return [node.keyName]
+    const deep = findOpenGroups(node.children, pathname)
+    if (deep.length) return [node.keyName, ...deep]
+  }
+  return []
 }
 
 // ─── helpers ───────────────────────────────────────────────────────────────────
@@ -83,7 +148,7 @@ const timeAgo = (dateStr) => {
 }
 
 // ─── Sidebar menu content (shared between Sider & Drawer) ─────────────────────
-const SidebarContent = ({ collapsed, location, menuItems, handleMenuClick, navigate, onMenuSelect }) => (
+const SidebarContent = ({ collapsed, location, menuItems, rawTree, handleMenuClick, navigate, onMenuSelect }) => (
   <>
     {/* Logo area */}
     <div
@@ -127,14 +192,7 @@ const SidebarContent = ({ collapsed, location, menuItems, handleMenuClick, navig
       theme="dark"
       mode="inline"
       selectedKeys={[location.pathname]}
-      defaultOpenKeys={(() => {
-        const path = location.pathname
-        if (['/cms/tours', '/cms/bookings', '/cms/passes', '/cms/pass-orders'].includes(path)
-          || /\/cms\/tours\/\d+\/faqs/.test(path)) return ['business']
-        if (['/cms/banners', '/cms/blogs', '/cms/faqs', '/cms/contacts'].includes(path)) return ['content']
-        if (['/cms/staff', '/cms/profile'].includes(path)) return ['system']
-        return []
-      })()}
+      defaultOpenKeys={findOpenGroups(rawTree, location.pathname)}
       items={menuItems}
       onClick={(e) => { handleMenuClick(e); onMenuSelect?.() }}
       style={{ background: 'transparent', border: 'none', marginTop: 8, flex: 1, overflowY: 'auto' }}
@@ -150,8 +208,25 @@ const CMSLayout = () => {
   const [notifLoading, setNotifLoading] = useState(false)
   const [bellOpen, setBellOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  // ─── dynamic sidebar ────────────────────────────────────────────
+  const [sidebarTree, setSidebarTree]   = useState([])
+  const [sidebarItems, setSidebarItems] = useState([])
   const isMobile = useIsMobile()
   const pollRef = useRef(null)
+
+  // Fetch CMS menus (backend đã filter theo quyền của user hiện tại)
+  const fetchSidebarMenus = useCallback(async () => {
+    try {
+      const res = await adminApi.getAllMenus('CMS')
+      const tree = res.data?.data || []
+      setSidebarTree(tree)
+      setSidebarItems(buildAntdMenuItems(tree))
+    } catch {
+      // Fallback: giữ nguyên state hiện tại nếu API lỗi
+    }
+  }, [])
+
+  useEffect(() => { fetchSidebarMenus() }, [fetchSidebarMenus])
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -197,45 +272,6 @@ const CMSLayout = () => {
 
   // Close drawer on route change (mobile)
   useEffect(() => { setDrawerOpen(false) }, [location.pathname])
-
-  const menuItems = [
-    {
-      key: '/cms',
-      icon: <DashboardOutlined />,
-      label: 'Dashboard',
-    },
-    {
-      label: 'Kinh doanh',
-      key: 'business',
-      icon: <ShoppingOutlined />,
-      children: [
-        { key: '/cms/tours', icon: <EnvironmentOutlined />, label: 'Quản lý Tour' },
-        { key: '/cms/bookings', icon: <CalendarOutlined />, label: 'Quản lý Booking' },
-        { key: '/cms/passes', icon: <CrownOutlined />, label: 'Adventure Pass' },
-        { key: '/cms/pass-orders', icon: <IdcardOutlined />, label: 'Đơn mua Pass' },
-      ],
-    },
-    {
-      label: 'Nội dung',
-      key: 'content',
-      icon: <FileTextOutlined />,
-      children: [
-        { key: '/cms/banners', icon: <PictureOutlined />, label: 'Banner / Hero' },
-        { key: '/cms/blogs', icon: <CommentOutlined />, label: 'Blog / Tin tức' },
-        { key: '/cms/faqs', icon: <QuestionCircleOutlined />, label: 'Quản lý FAQ' },
-        { key: '/cms/contacts', icon: <MailOutlined />, label: 'Hộp thư liên hệ' },
-      ],
-    },
-    {
-      label: 'Hệ thống',
-      key: 'system',
-      icon: <TeamOutlined />,
-      children: [
-        { key: '/cms/staff', icon: <UserOutlined />, label: 'Nhân viên' },
-        { key: '/cms/notification-configs', icon: <SettingOutlined />, label: 'Cấu hình thông báo' },
-      ],
-    },
-  ]
 
   const userMenuItems = [
     { key: 'profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân' },
@@ -370,7 +406,8 @@ const CMSLayout = () => {
               <SidebarContent
                 collapsed={collapsed}
                 location={location}
-                menuItems={menuItems}
+                menuItems={sidebarItems}
+                rawTree={sidebarTree}
                 handleMenuClick={handleMenuClick}
                 navigate={navigate}
               />
@@ -407,7 +444,8 @@ const CMSLayout = () => {
             <SidebarContent
               collapsed={false}
               location={location}
-              menuItems={menuItems}
+              menuItems={sidebarItems}
+              rawTree={sidebarTree}
               handleMenuClick={handleMenuClick}
               navigate={navigate}
               onMenuSelect={() => setDrawerOpen(false)}

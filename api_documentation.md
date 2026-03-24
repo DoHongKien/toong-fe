@@ -115,7 +115,7 @@ Tài liệu này xác định các điểm cuối (endpoints) API cần thiết,
       ]
     }
     ```
-*   **Lưu ý:** `costDetails`, `luggages` và `faqs` là optional. Nếu được truyền, backend tự động insert các bản ghi tương ứng vào bảng `tour_cost_details`, `tour_luggages` và `tour_faqs` sau khi tạo tour.
+*   **Lưu ý:** `costDetails`, `luggages` và `faqs` là optional — có thể bị **bỏ qua** (null / không truyền) **hoặc** là **mảng rỗng** (`[]`). Backend phải kiểm tra cả hai trường hợp (`!= null && !isEmpty()`) trước khi insert để tránh lỗi NullPointerException hay insert rỗng. Nếu hợp lệ, backend tự động insert vào bảng `tour_cost_details`, `tour_luggages` và `tour_faqs` sau khi tạo tour.
 *   **Response:** `201 Created` + tour object vừa tạo.
 
 
@@ -129,9 +129,8 @@ Tài liệu này xác định các điểm cuối (endpoints) API cần thiết,
 *   **Endpoint:** `DELETE /api/v1/admin/tours/:id`
 *   **Response:** `200 OK` + `{ "status": "success", "message": "Tour đã được xóa." }`
 
-### 1.6 [ADMIN] Lấy chi tiết Tour theo ID
+### 1.6 [ADMIN] Lấy chi tiết Tour
 *   **Endpoint:** `GET /api/v1/admin/tours/:id`
-*   **Mục đích:** Dùng cho màn **Chỉnh sửa Tour** trong CMS — trả về đầy đủ thông tin tour kèm `costDetails`, `luggages`, `faqs` để pre-fill form.
 *   **Response:**
     ```json
     {
@@ -141,28 +140,40 @@ Tài liệu này xác định các điểm cuối (endpoints) API cần thiết,
         "name": "Tà Năng - Phan Dũng",
         "slug": "ta-nang-phan-dung",
         "cardImage": "https://...",
-        "heroImage": "https://...",
         "badge": "Best Seller",
         "region": "taynguyen",
         "durationDays": 2,
         "durationNights": 1,
         "difficulty": "Vừa phải",
         "summary": "...",
-        "basePrice": 2990000.00,
+        "basePrice": 2990000.0,
         "costDetails": [
-          { "id": 1, "isIncluded": true,  "content": "Xe khứ hồi TP.HCM", "sortOrder": 1 },
-          { "id": 2, "isIncluded": false, "content": "Chi phí cá nhân",    "sortOrder": 2 }
+          {
+            "id": 1,
+            "isIncluded": true,
+            "content": "Xe khứ hồi TP.HCM - điểm xuất phát",
+            "sortOrder": 1
+          }
         ],
         "luggages": [
-          { "id": 1, "name": "GIÀY", "detail": "Giày trekking đế bám.", "sortOrder": 1 }
+          {
+            "id": 1,
+            "name": "GIÀY",
+            "detail": "Giày trekking đế bám, cổ thấp hoặc cổ cao.",
+            "sortOrder": 1
+          }
         ],
         "faqs": [
-          { "id": 1, "question": "Có cần kinh nghiệm không?", "answer": "Không cần.", "sortOrder": 1 }
+          {
+            "id": 1,
+            "question": "Tour này có cần kinh nghiệm trekking không?",
+            "answer": "Không cần kinh nghiệm trước, chỉ cần sức khỏe tốt.",
+            "sortOrder": 1
+          }
         ]
       }
     }
     ```
-*   **Lưu ý:** Khác với `GET /api/v1/tours/:slug` (public), endpoint này yêu cầu JWT admin và trả về key camelCase nhất quán (`costDetails` thay vì `cost_details`).
 
 ---
 
@@ -353,6 +364,49 @@ Tài liệu này xác định các điểm cuối (endpoints) API cần thiết,
 *   **Tạo:** `POST /api/v1/admin/adventure-passes`
 *   **Cập nhật:** `PUT /api/v1/admin/adventure-passes/:id`
 *   **Xóa:** `DELETE /api/v1/admin/adventure-passes/:id`
+
+### 3.6 [ADMIN] Lấy danh sách Adventure Pass (có phân trang)
+*   **Endpoint:** `GET /api/v1/admin/adventure-passes`
+*   **Query Parameters:**
+    *   `page` *(optional)*: trang hiện tại, mặc định `1`
+    *   `limit` *(optional)*: số bản ghi mỗi trang, mặc định `10`
+*   **Mô tả:** Trả về danh sách Pass kèm features có phân trang, sắp xếp theo giá tăng dần. Dùng cho màn quản lý Pass trong CMS.
+*   **Response:**
+    ```json
+    {
+      "status": "success",
+      "data": {
+        "data": [
+          {
+            "id": 1,
+            "title": "TRIAL",
+            "subtitle": "Dành cho người mới",
+            "price": 8990000.00,
+            "validityDate": "2026-12-31",
+            "isSignature": false,
+            "colorTheme": "#FF6B35",
+            "features": [
+              { "content": "3 cung đường", "isBold": true },
+              { "content": "Không bao gồm xe", "isBold": false }
+            ]
+          },
+          {
+            "id": 2,
+            "title": "SIGNATURE",
+            "subtitle": "Trải nghiệm đỉnh cao",
+            "price": 15990000.00,
+            "validityDate": "2026-12-31",
+            "isSignature": true,
+            "colorTheme": "#2C3E50",
+            "features": [
+              { "content": "Không giới hạn cung đường", "isBold": true }
+            ]
+          }
+        ],
+        "pagination": { "page": 1, "limit": 10, "total": 3 }
+      }
+    }
+    ```
 
 ---
 
@@ -1069,7 +1123,6 @@ CREATE TABLE notification_configs (
 | Tours | `/api/v1/tours` | GET | PUBLIC |
 | Tours | `/api/v1/tours/:slug` | GET | PUBLIC |
 | Tours | `/api/v1/admin/tours` | POST | ADMIN |
-| Tours | `/api/v1/admin/tours/:id` | GET | ADMIN |
 | Tours | `/api/v1/admin/tours/:id` | PUT / DELETE | ADMIN |
 | Departures | `/api/v1/tours/:id/departures` | GET | PUBLIC |
 | Departures | `/api/v1/admin/departures` | POST | ADMIN |
@@ -1219,9 +1272,354 @@ CREATE TABLE notification_configs (
 
 ---
 
+## 17. Module Tour FAQs [ADMIN]
+
+> Quản lý câu hỏi thường gặp (FAQ) gắn theo từng tour cụ thể.
+> Khác với Module 7 (General FAQs) là FAQ chung của website, Tour FAQs hiển thị trực tiếp trong màn **Tour Detail**.
+
+### 17.1 [ADMIN] Lấy danh sách FAQ theo Tour
+*   **Endpoint:** `GET /api/v1/admin/tour-faqs`
+*   **Query Parameters:**
+    *   `tourId` *(required)*: ID của tour
+*   **Response:**
+    ```json
+    {
+      "status": "success",
+      "data": [
+        {
+          "id": 1,
+          "tourId": 3,
+          "tourName": "Tà Năng - Phan Dũng",
+          "question": "Tour này có cần kinh nghiệm trekking không?",
+          "answer": "Không cần kinh nghiệm trước, chỉ cần sức khỏe tốt.",
+          "sortOrder": 1
+        }
+      ]
+    }
+    ```
+*   **Lưu ý:** Dữ liệu trả về đã được sắp xếp theo `sortOrder` tăng dần.
+
+### 17.2 [ADMIN] Tạo Tour FAQ mới
+*   **Endpoint:** `POST /api/v1/admin/tour-faqs`
+*   **Request Body:**
+    ```json
+    {
+      "tourId": 3,
+      "question": "Tour này có cần kinh nghiệm trekking không?",
+      "answer": "Không cần kinh nghiệm trước, chỉ cần sức khỏe tốt.",
+      "sortOrder": 1
+    }
+    ```
+*   **Validation:**
+    *   `tourId` — bắt buộc, phải tồn tại trong bảng `tours`.
+    *   `question`, `answer` — bắt buộc, không được rỗng.
+    *   `sortOrder` — optional, mặc định `0` nếu không truyền.
+*   **Response:** `201 Created` + tour FAQ object vừa tạo.
+    ```json
+    {
+      "status": "success",
+      "data": {
+        "id": 5,
+        "tourId": 3,
+        "tourName": "Tà Năng - Phan Dũng",
+        "question": "Tour này có cần kinh nghiệm trekking không?",
+        "answer": "Không cần kinh nghiệm trước, chỉ cần sức khỏe tốt.",
+        "sortOrder": 1
+      }
+    }
+    ```
+
+### 17.3 [ADMIN] Cập nhật Tour FAQ
+*   **Endpoint:** `PUT /api/v1/admin/tour-faqs/:id`
+*   **Request Body:** (các trường cần cập nhật)
+    ```json
+    {
+      "question": "Câu hỏi đã chỉnh sửa?",
+      "answer": "Câu trả lời mới.",
+      "sortOrder": 2
+    }
+    ```
+*   **Lưu ý:** Chỉ các field được truyền mới được cập nhật (partial update). `tourId` không thể thay đổi qua endpoint này.
+*   **Response:** `200 OK` + tour FAQ object đã cập nhật.
+    ```json
+    {
+      "status": "success",
+      "data": {
+        "id": 5,
+        "tourId": 3,
+        "tourName": "Tà Năng - Phan Dũng",
+        "question": "Câu hỏi đã chỉnh sửa?",
+        "answer": "Câu trả lời mới.",
+        "sortOrder": 2
+      }
+    }
+    ```
+
+### 17.4 [ADMIN] Xóa Tour FAQ
+*   **Endpoint:** `DELETE /api/v1/admin/tour-faqs/:id`
+*   **Response:** `200 OK` + `{ "status": "success", "message": "Đã xóa." }`
+
+---
+
+## 18. Module Menus (Quản lý Menu điều hướng) [ADMIN]
+
+> Quản lý toàn bộ cấu trúc menu điều hướng dạng cây (tree). Menu hỗ trợ 3 kiểu: `MEGA_PARENT` (menu chứa Mega Menu), `SIMPLE` (menu dropdown thường), `ITEM` (mục lá, không có con).
+> - Menu có thể lồng nhau (parent → children) thông qua `parentId`.
+> - Menu có thể liên kết với một Tour cụ thể thông qua `tourId` (dùng cho Mega Menu hiển thị thông tin tour).
+> - **Trường `context`**: Phân biệt menu web client (`CLIENT`) và menu sidebar CMS (`CMS`). Dùng **chung một bảng** `menus`, phân biệt qua `context` — không cần tạo 2 bảng riêng.
+
+### DB Schema bổ sung cho Module 18
+```sql
+ALTER TABLE menus ADD COLUMN context ENUM('CLIENT', 'CMS') NOT NULL DEFAULT 'CLIENT';
+ALTER TABLE menus ADD COLUMN icon VARCHAR(100) NULL COMMENT 'Tên icon Ant Design, chỉ dùng cho context=CMS';
+CREATE INDEX idx_menus_context ON menus(context, isActive, orderIndex);
+```
+
+### 18.1 Lấy danh sách Menu [PUBLIC]
+*   **Endpoint:** `GET /api/v1/menus`
+*   **Mô tả:** Trả về toàn bộ cây menu đang active (chỉ gồm các menu `isActive = true`), dạng nested tree (root → children).
+*   **Response:**
+    ```json
+    {
+      "status": "success",
+      "data": [
+        {
+          "id": 1,
+          "keyName": "tours-mega",
+          "label": "TOURS",
+          "href": null,
+          "type": "MEGA_PARENT",
+          "megaAccentTitle": "Khám phá",
+          "megaMainTitle": "Cung đường trekking",
+          "megaDescription": "Hành trình chinh phục thiên nhiên hoang dã...",
+          "megaImage": "https://...",
+          "orderIndex": 1,
+          "children": [
+            {
+              "id": 2,
+              "keyName": "tour-ta-nang",
+              "label": "Tà Năng - Phan Dũng",
+              "href": "/tours/ta-nang-phan-dung",
+              "type": "ITEM",
+              "orderIndex": 1
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "keyName": "about",
+          "label": "GIỚI THIỆU",
+          "href": "/about",
+          "type": "SIMPLE",
+          "orderIndex": 2
+        }
+      ]
+    }
+    ```
+
+### 18.2 [ADMIN] Lấy toàn bộ Menu (kể cả đã ẩn)
+*   **Endpoint:** `GET /api/v1/admin/menus`
+*   **Mô tả:** Trả về toàn bộ cây menu (bao gồm cả `isActive = false`), dùng cho màn hình quản lý CMS.
+*   **Response:** Tương tự 18.1 nhưng mỗi item bổ sung thêm trường `isActive` và `tourId`.
+    ```json
+    {
+      "status": "success",
+      "data": [
+        {
+          "id": 1,
+          "keyName": "tours-mega",
+          "label": "TOURS",
+          "href": null,
+          "type": "MEGA_PARENT",
+          "megaAccentTitle": "Khám phá",
+          "megaMainTitle": "Cung đường trekking",
+          "megaDescription": "Hành trình chinh phục thiên nhiên hoang dã...",
+          "megaImage": "https://...",
+          "orderIndex": 1,
+          "isActive": true,
+          "tourId": null,
+          "children": [ ... ]
+        }
+      ]
+    }
+    ```
+
+### 18.3 [ADMIN] Lấy chi tiết một Menu
+*   **Endpoint:** `GET /api/v1/admin/menus/:id`
+*   **Response:**
+    ```json
+    {
+      "status": "success",
+      "data": {
+        "id": 1,
+        "parentId": null,
+        "tourId": null,
+        "context": "CMS",
+        "icon": "ShoppingOutlined",
+        "requiredPermission": "TOUR_VIEW",
+        "keyName": "tours-mega",
+        "label": "TOURS",
+        "href": null,
+        "type": "MEGA_PARENT",
+        "megaAccentTitle": "Khám phá",
+        "megaMainTitle": "Cung đường trekking",
+        "megaDescription": "Hành trình chinh phục thiên nhiên hoang dã...",
+        "megaImage": "https://...",
+        "orderIndex": 1,
+        "isActive": true
+      }
+    }
+    ```
+
+### 18.4 [ADMIN] Tạo Menu mới
+*   **Endpoint:** `POST /api/v1/admin/menus`
+*   **Request Body:**
+    ```json
+    {
+      "parentId": null,
+      "tourId": null,
+      "keyName": "adventure-pass",
+      "label": "ADVENTURE PASS",
+      "href": "/adventure-pass",
+      "type": "SIMPLE",
+      "megaAccentTitle": null,
+      "megaMainTitle": null,
+      "megaDescription": null,
+      "megaImage": null,
+      "orderIndex": 3,
+      "isActive": true
+    }
+    ```
+*   **Lưu ý:**
+    - `keyName` phải là duy nhất trong toàn bộ bảng `menus`.
+    - `parentId = null` → menu cấp root. `parentId = <id>` → menu con của menu đó.
+    - Với `type = MEGA_PARENT`: nên điền đầy đủ `megaAccentTitle`, `megaMainTitle`, `megaDescription`, `megaImage`.
+    - `tourId` chỉ cần thiết khi menu ITEM muốn liên kết trực tiếp đến một tour.
+*   **Response:** `201 Created` + menu object vừa tạo.
+
+### 18.5 [ADMIN] Cập nhật Menu
+*   **Endpoint:** `PUT /api/v1/admin/menus/:id`
+*   **Request Body:** (các trường cần cập nhật, tương tự 18.4)
+*   **Lưu ý:** Partial update — chỉ field nào được gửi mới được cập nhật.
+*   **Response:** `200 OK` + menu object đã cập nhật.
+
+### 18.6 [ADMIN] Xóa Menu
+*   **Endpoint:** `DELETE /api/v1/admin/menus/:id`
+*   **Lưu ý:** Xóa cascade — khi xóa menu cha, tất cả menu con cũng bị xóa theo (do `ON DELETE CASCADE` ở DB).
+*   **Response:** `200 OK` + `{ "status": "success", "message": "Đã xóa menu." }`
+
+### 18.7 [ADMIN] Bật/Tắt hiển thị Menu
+*   **Endpoint:** `PATCH /api/v1/admin/menus/:id/status`
+*   **Request Body:**
+    ```json
+    { "isActive": false }
+    ```
+*   **Response:** `200 OK` + menu object đã cập nhật.
+
+### 18.8 [ADMIN] Cập nhật thứ tự Menu (Reorder)
+*   **Endpoint:** `PATCH /api/v1/admin/menus/:id/order`
+*   **Request Body:**
+    ```json
+    { "orderIndex": 2 }
+    ```
+*   **Response:** `200 OK` + menu object đã cập nhật.
+
+### 18.9 [ADMIN] Query param `context` cho endpoint 18.2
+*   **Endpoint:** `GET /api/v1/admin/menus?context=CMS`
+*   **Mô tả:** Dùng chung endpoint 18.2 với `context=CMS` để lấy menu sidebar CMS. Khi `context` không truyền, mặc định trả về `CLIENT`.
+*   **Response ví dụ (CMS sidebar):**
+    ```json
+    {
+      "status": "success",
+      "data": [
+        {
+          "id": 100,
+          "keyName": "cms-business",
+          "label": "Kinh doanh",
+          "href": null,
+          "type": "SIMPLE",
+          "icon": "ShoppingOutlined",
+          "orderIndex": 1,
+          "isActive": true,
+          "context": "CMS",
+          "children": [
+            {
+              "id": 101,
+              "keyName": "cms-tours",
+              "label": "Quản lý Tour",
+              "href": "/cms/tours",
+              "type": "ITEM",
+              "icon": "EnvironmentOutlined",
+              "orderIndex": 1,
+              "isActive": true,
+              "context": "CMS"
+            }
+          ]
+        }
+      ]
+    }
+    ```
+*   **Lưu ý:** Trường `icon` lưu tên icon Ant Design dạng string. Frontend tự map sang component icon tương ứng tại runtime. Không dùng `megaAccentTitle / megaMainTitle / megaImage` cho context CMS.
+
+### 18.10 [ADMIN] Logic lọc menu theo quyền (RBAC — Approach 3)
+
+> Mô tả cách backend filter menu CMS sidebar dựa trên `required_permission` và quyền hạn của user đang đăng nhập.
+
+**SQL backend thực thi khi gọi `GET /api/v1/admin/menus?context=CMS`:**
+
+```sql
+-- Lấy tất cả menu CMS mà user hiện tại có quyền xem
+-- Điều kiện: required_permission IS NULL (mọi admin thấy)
+--          HOẶC user có permission tương ứng trong role của mình
+SELECT m.*
+FROM menus m
+WHERE m.context = 'CMS'
+  AND m.is_active = TRUE
+  AND (
+    m.required_permission IS NULL
+    OR m.required_permission IN (
+      SELECT p.code
+      FROM permissions p
+      JOIN role_permissions rp ON p.id = rp.permission_id
+      JOIN employees e       ON e.role_id = rp.role_id
+      WHERE e.id = :currentEmployeeId   -- lấy từ JWT token
+    )
+  )
+ORDER BY m.order_index ASC;
+```
+
+**Bảng mapping permission ↔ menu CMS (tham khảo):**
+
+| Menu (key_name) | `required_permission` |
+|---|---|
+| `cms-dashboard` | `NULL` (mọi admin) |
+| `cms-tours` | `TOUR_VIEW` |
+| `cms-bookings` | `BOOKING_VIEW` |
+| `cms-passes` | `PASS_VIEW` |
+| `cms-pass-orders` | `PASS_VIEW` |
+| `cms-banners` | `BANNER_MANAGE` |
+| `cms-blogs` | `BLOG_MANAGE` |
+| `cms-faqs` | `FAQ_MANAGE` |
+| `cms-contacts` | `CONTACT_VIEW` |
+| `cms-staff` | `STAFF_MANAGE` |
+| `cms-notification-configs` | `SYSTEM_MANAGE` |
+| `cms-roles` | `ROLE_MANAGE` |
+| `cms-menus` | `MENU_MANAGE` |
+
+**Ghi chú thiết kế quan trọng:**
+- Nhóm cha (`SIMPLE` type, VD: `cms-business`) không cần `required_permission` vì backend sẽ **tự động ẩn nhóm** nếu tất cả menu con đều bị lọc ra. Implement bằng cách post-process cây sau khi query.
+- Frontend **không cần check permission thêm lần nào** — backend đã trả về đúng menu user được phép thấy.
+- Các nút hành động trong trang (Thêm, Sửa, Xóa) cần **check permission riêng biệt** trên từng trang component: `user.permissions.includes('TOUR_CREATE')`.
+
+---
+
 **Gợi ý lập trình:**
 - Dùng **JWT middleware** để bảo vệ tất cả route `/api/v1/admin/**`.
 - Dùng **RBAC middleware** sau JWT để kiểm tra `permission.code` (từ bảng `permissions`) cho từng action cụ thể.
 - Với các route trả về danh sách lớn, luôn implement **pagination** (`page` + `limit`).
 - Dùng **`Promise.all`** ở backend khi `TourDetail` cần join nhiều bảng con để tối ưu hiệu năng.
+- Khi tạo tour (API 1.3), với `costDetails` / `luggages` / `faqs`: luôn kiểm tra `!= null && !isEmpty()` trước khi bulk-insert để tránh lỗi không cần thiết.
+- Với Module Menu: lọc `WHERE context = ?` trước khi build cây. Build cây bằng cách nhóm theo `parentId` ở application layer thay vì JOIN đệ quy SQL để dễ bảo trì.
+
+- Với Module Menu: lọc `WHERE context = ?` trước khi build cây. Build cây bằng cách nhóm theo `parentId` ở application layer thay vì JOIN đệ quy SQL để dễ bảo trì.
 

@@ -4,6 +4,7 @@ const API_BASE_URL = "http://localhost:8080/api/v1";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 12000, // 12 giây — sau đó coi là server không phản hồi
   headers: {
     "Content-Type": "application/json",
   },
@@ -23,11 +24,30 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Phát custom event để ServerStatusContext lắng nghe
+const emitServerDown = () =>
+  window.dispatchEvent(new CustomEvent("server:down"))
+
+const emitServerUp = () =>
+  window.dispatchEvent(new CustomEvent("server:up"))
+
 // Response interceptor: nếu 401 và đang KHÔNG ở trang login → xoá token + redirect
 // (tránh reload vô tận khi đăng nhập sai vì API trả 401)
+// Nếu network error / timeout → emit server:down
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    emitServerUp()
+    return response
+  },
   (error) => {
+    const isNetworkError = !error.response                        // server không phản hồi
+    const isTimeout     = error.code === "ECONNABORTED"           // axios timeout
+    const isServerCrash = error.response?.status >= 500           // 500/502/503
+
+    if (isNetworkError || isTimeout || isServerCrash) {
+      emitServerDown()
+    }
+
     if (
       error.response?.status === 401 &&
       !window.location.pathname.includes("/cms/login")
@@ -64,6 +84,15 @@ export const navApi = {
 };
 
 export const adminApi = {
+  // Menus
+  getAllMenus: (context = 'CLIENT') => api.get('/admin/menus', { params: { context } }),
+  getMenuById: (id) => api.get(`/admin/menus/${id}`),
+  createMenu: (data) => api.post('/admin/menus', data),
+  updateMenu: (id, data) => api.put(`/admin/menus/${id}`, data),
+  deleteMenu: (id) => api.delete(`/admin/menus/${id}`),
+  toggleMenuStatus: (id, isActive) => api.patch(`/admin/menus/${id}/status`, { isActive }),
+  reorderMenu: (id, orderIndex) => api.patch(`/admin/menus/${id}/order`, { orderIndex }),
+
   // Tours
   getAllTours: (params) => api.get("/admin/tours", { params }),
   getTourById: (id) => api.get(`/admin/tours/${id}`),
@@ -78,7 +107,7 @@ export const adminApi = {
     api.patch(`/admin/bookings/${id}/status`, { status }),
 
   // Passes
-  getAllPasses: (body = {}) => api.post("/admin/adventure-passes", body),
+  getAllPasses: (params = {}) => api.get('/admin/adventure-passes', { params }),
   createPass: (data) => api.post("/admin/adventure-passes", data),
   updatePass: (id, data) => api.put(`/admin/adventure-passes/${id}`, data),
   deletePass: (id) => api.delete(`/admin/adventure-passes/${id}`),
@@ -145,6 +174,11 @@ export const adminApi = {
   createRole: (data) => api.post("/admin/roles", data),
   updateRole: (id, data) => api.put(`/admin/roles/${id}`, data),
   deleteRole: (id) => api.delete(`/admin/roles/${id}`),
+
+  // Permissions
+  getAllPermissions: () => api.get("/admin/permissions"),
+  getRolePermissions: (id) => api.get(`/admin/roles/${id}/permissions`),
+  updateRolePermissions: (id, data) => api.put(`/admin/roles/${id}/permissions`, data),
 
   // Profile (bản thân)
   getProfile: () => api.get("/admin/profile"),

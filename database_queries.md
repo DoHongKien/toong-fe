@@ -236,7 +236,37 @@ CREATE TABLE contact_messages (
     status ENUM('new', 'contacted', 'resolved') DEFAULT 'new',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 20. Bảng MENUS (Điều hướng website CLIENT + CMS sidebar)
+CREATE TABLE menus (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    parent_id INT NULL,
+    tour_id INT NULL,
+    context ENUM('CLIENT', 'CMS') NOT NULL DEFAULT 'CLIENT'
+        COMMENT 'CLIENT = menu website public | CMS = menu sidebar admin portal',
+    key_name VARCHAR(100) UNIQUE NOT NULL
+        COMMENT 'Slug duy nhất, dùng làm key tham chiếu trong code',
+    label VARCHAR(255) NOT NULL,
+    href VARCHAR(500) NULL
+        COMMENT 'Đường dẫn điều hướng. NULL = menu nhóm (group), không điều hướng',
+    type ENUM('MEGA_PARENT', 'SIMPLE', 'ITEM') NOT NULL DEFAULT 'ITEM',
+    icon VARCHAR(100) NULL
+        COMMENT 'Tên icon Ant Design (string). Chỉ dùng cho context=CMS',
+    required_permission VARCHAR(50) NULL
+        COMMENT 'Mã permission (permissions.code) cần có để thấy menu. NULL = mọi admin đều thấy',
+    mega_accent_title VARCHAR(255) NULL,
+    mega_main_title VARCHAR(255) NULL,
+    mega_description TEXT NULL,
+    mega_image VARCHAR(500) NULL,
+    order_index INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (parent_id) REFERENCES menus(id) ON DELETE CASCADE,
+    FOREIGN KEY (tour_id) REFERENCES tours(id) ON DELETE SET NULL,
+    INDEX idx_menus_context (context, is_active, order_index)
+);
 ```
+
 
 ---
 

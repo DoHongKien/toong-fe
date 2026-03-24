@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { ServerStatusProvider, useServerStatus } from './context/ServerStatusContext'
+import MaintenancePage from './pages/MaintenancePage'
 import Home from './pages/Home'
 import Tours from './pages/Tours'
 import TourDetail from './pages/TourDetail'
@@ -24,51 +26,64 @@ import TourLuggageManagement from './pages/cms/TourLuggageManagement'
 import Contacts from './pages/cms/Contacts'
 import Profile from './pages/cms/Profile'
 import NotificationConfig from './pages/cms/NotificationConfig'
+import RoleManagement from './pages/cms/RoleManagement'
+import MenuManagement from './pages/cms/MenuManagement'
 
-const App = () => {
+// ─── Inner wrapper: đọc server status và hiện maintenance nếu cần
+const AppRoutes = () => {
+  const { isDown } = useServerStatus()
+  if (isDown) return <MaintenancePage />
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          {/* Client Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/tours" element={<Tours />} />
-          <Route path="/tours/:slug" element={<TourDetail />} />
-          <Route path="/level" element={<Level />} />
-          <Route path="/adventure-pass" element={<AdventurePass />} />
+    <AuthProvider>
+      <Routes>
+        {/* Client Routes */}
+        <Route path="/" element={<Home />} />
+        <Route path="/tours" element={<Tours />} />
+        <Route path="/tours/:slug" element={<TourDetail />} />
+        <Route path="/level" element={<Level />} />
+        <Route path="/adventure-pass" element={<AdventurePass />} />
 
-          {/* Auth Route */}
-          <Route path="/cms/login" element={<Login />} />
+        {/* Auth Route */}
+        <Route path="/cms/login" element={<Login />} />
 
-          {/* CMS Routes - Protected */}
-          <Route
-            path="/cms"
-            element={
-              <ProtectedRoute>
-                <CMSLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Dashboard />} />
-            <Route path="tours" element={<ToursManagement />} />
-            <Route path="bookings" element={<BookingsManagement />} />
-            <Route path="passes" element={<PassManagement />} />
-            <Route path="pass-orders" element={<PassOrders />} />
-            <Route path="banners" element={<BannerManagement />} />
-            <Route path="blogs" element={<BlogManagement />} />
-            <Route path="faqs" element={<FAQManagement />} />
-            <Route path="tours/:tourId/faqs" element={<TourFAQManagement />} />
-            <Route path="tours/:tourId/cost-details" element={<TourCostDetailManagement />} />
-            <Route path="tours/:tourId/luggages" element={<TourLuggageManagement />} />
-            <Route path="contacts" element={<Contacts />} />
-            <Route path="staff" element={<StaffManagement />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="notification-configs" element={<NotificationConfig />} />
-          </Route>
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+        {/* CMS Routes - Protected */}
+        <Route
+          path="/cms"
+          element={
+            <ProtectedRoute>
+              <CMSLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Dashboard />} />
+          <Route path="tours" element={<ToursManagement />} />
+          <Route path="bookings" element={<BookingsManagement />} />
+          <Route path="passes" element={<PassManagement />} />
+          <Route path="pass-orders" element={<PassOrders />} />
+          <Route path="banners" element={<BannerManagement />} />
+          <Route path="blogs" element={<BlogManagement />} />
+          <Route path="faqs" element={<FAQManagement />} />
+          <Route path="tours/:tourId/faqs" element={<TourFAQManagement />} />
+          <Route path="tours/:tourId/cost-details" element={<TourCostDetailManagement />} />
+          <Route path="tours/:tourId/luggages" element={<TourLuggageManagement />} />
+          <Route path="contacts" element={<Contacts />} />
+          <Route path="staff" element={<StaffManagement />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="notification-configs" element={<NotificationConfig />} />
+          <Route path="roles" element={<RoleManagement />} />
+          <Route path="menus" element={<MenuManagement />} />
+        </Route>
+      </Routes>
+    </AuthProvider>
   )
 }
+
+const App = () => (
+  <BrowserRouter>
+    <ServerStatusProvider>
+      <AppRoutes />
+    </ServerStatusProvider>
+  </BrowserRouter>
+)
 
 export default App
