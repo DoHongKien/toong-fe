@@ -6,4 +6,8 @@ export default defineConfig({
   server: {
     port: 3001,
   },
+  // sockjs-client (CommonJS) references Node.js `global` — polyfill it for the browser
+  define: {
+    global: 'globalThis',
+  },
 });

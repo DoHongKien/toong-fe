@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import useNotifications from '../../hooks/useNotifications'
 import { useAuth } from '../../context/AuthContext'
 import {
   Layout, Menu, Button, ConfigProvider, Avatar, Dropdown, Badge, Breadcrumb, Typography,
@@ -204,15 +205,14 @@ const CMSLayout = () => {
   const { user, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [notifications, setNotifications] = useState([])
-  const [notifLoading, setNotifLoading] = useState(false)
   const [bellOpen, setBellOpen] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
   // ─── dynamic sidebar ────────────────────────────────────────────
   const [sidebarTree, setSidebarTree]   = useState([])
   const [sidebarItems, setSidebarItems] = useState([])
   const isMobile = useIsMobile()
-  const pollRef = useRef(null)
+
+  // ─── notifications (polling or WebSocket, toggled by VITE_USE_WEBSOCKET) ───
+  const { notifications, unreadCount, notifLoading, markAsRead, markAllRead } = useNotifications()
 
   // Fetch CMS menus (backend đã filter theo quyền của user hiện tại)
   const fetchSidebarMenus = useCallback(async () => {
@@ -227,44 +227,6 @@ const CMSLayout = () => {
   }, [])
 
   useEffect(() => { fetchSidebarMenus() }, [fetchSidebarMenus])
-
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const res = await adminApi.getNotifications({ limit: 20 })
-      const inner = res.data?.data ?? {}
-      const data = Array.isArray(inner.data) ? inner.data : Array.isArray(inner) ? inner : []
-      const count = inner.unreadCount ?? data.filter(n => !n.isRead).length
-      setNotifications(data)
-      setUnreadCount(count)
-    } catch {
-      // silent fail — avoid crashing UI
-    }
-  }, [])
-
-  useEffect(() => {
-    setNotifLoading(true)
-    fetchNotifications().finally(() => setNotifLoading(false))
-    pollRef.current = setInterval(fetchNotifications, 60_000)
-    return () => clearInterval(pollRef.current)
-  }, [fetchNotifications])
-
-  const markAsRead = async (id) => {
-    const notif = notifications.find(n => n.id === id)
-    if (!notif || notif.isRead) return
-    try {
-      await adminApi.markNotificationRead(id)
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n))
-      setUnreadCount(prev => Math.max(0, prev - 1))
-    } catch { /* silent */ }
-  }
-
-  const markAllRead = async () => {
-    try {
-      await adminApi.markAllNotificationsRead()
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
-      setUnreadCount(0)
-    } catch { /* silent */ }
-  }
   const navigate = useNavigate()
   const location = useLocation()
 

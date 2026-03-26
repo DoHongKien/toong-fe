@@ -11,6 +11,7 @@
   "dependencies": {
     "@ant-design/pro-components": "^2.8.10",
     "@phosphor-icons/react": "^2.1.10",
+    "@stomp/stompjs": "^7.3.0",
     "antd": "^5.29.3",
     "axios": "^1.13.6",
     "chart.js": "^4.4.9",
@@ -18,7 +19,8 @@
     "react": "^18.3.1",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.22.3"
+    "react-router-dom": "^6.22.3",
+    "sockjs-client": "^1.6.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
